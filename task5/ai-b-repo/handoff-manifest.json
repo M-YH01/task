@@ -1,0 +1,18 @@
+{
+  "codeCommit": "88ec7926aade5b425038eca14e22472bbc8f1bee",
+  "files": {
+    "index.html": "814d8bf2b687e52bbcbed601609a52f2934b3aeefc0488b7545fa26032bc4d6e",
+    "README.md": "8addf37a3c302976a54334f6e664f9eb5366bca1d79c0202b955992824ba9a2b",
+    "PROTOCOL.md": "49eaf826031eb4fa3903fbe276dac465a163c80cb0be9962de2618f39274c3a8",
+    "INITIAL_REQUEST.md": "9c599b00ccd8da0f18f3e11ccc6762c27e4312af50ebd83973e1bdd049471a02",
+    "HANDOFF.md": "784da8681721cb70998a3b0ea308ec2cb0e7c2d3da1ae2516007d78e8cf3709a",
+    "SUBMISSION.md": "7768926fa0218a3cd86153d21bff03b8b185aeb575dec2e315f87753307cad5d",
+    "tests/cases.json": "6eecd801f7ed0566c8805a1b78ee03e0747bfca32ea57fbdea5b161c1fc4874d",
+    "tests/run.cjs": "aa35d317aa1bfd4a916c10e922d7766063b1c3a71822c3cc4b4f4beedad31e37",
+    "tools/receive.cjs": "aabc4ef20080755a617aa912b2211ce09d9432dc9160f0a1730b7b2c252b5c88",
+    "evidence/a-start.json": "41c7d646f8e96f0251afff37d5226f9953510baf11658a8434952a0e300ba1f9",
+    "evidence/baseline.json": "61cbf390864ea3906dd4c134554abf2aebf71007ad06485619cb35f3e1a24074",
+    "evidence/a-tests.json": "5d432e72031b9b811ed2a1785220c6b04c88ece4fecb22cf2dac55836abf81fa",
+    "evidence/fresh-folder.json": "49c87723f7df551a8546ceaaea289c8ecb4158ebd168fe7eef27d259525943c7"
+  }
+}

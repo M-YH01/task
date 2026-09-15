@@ -1,0 +1,10 @@
+{
+  "receivedAt": "2026-09-15T07:20:41.904Z",
+  "role": "A reproduction only",
+  "codeCommit": "88ec7926aade5b425038eca14e22472bbc8f1bee",
+  "expectedHandoffSha256": "784da8681721cb70998a3b0ea308ec2cb0e7c2d3da1ae2516007d78e8cf3709a",
+  "receivedHandoffSha256": "784da8681721cb70998a3b0ea308ec2cb0e7c2d3da1ae2516007d78e8cf3709a",
+  "allFilesMatch": true,
+  "checkedFiles": 13,
+  "transcriptProvided": "Not determined by this script; B must attest separately"
+}

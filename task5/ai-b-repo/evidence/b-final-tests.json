@@ -1,0 +1,58 @@
+{
+  "recordedAt": "2026-09-15T07:37:48.839Z",
+  "sourceSha256": "83614a68433d6b76a28cec2712b2fa19b99cdcba02f6ee49f2cc6db5cf87eecf",
+  "passed": 10,
+  "total": 10,
+  "results": [
+    {
+      "id": "T01",
+      "name": "정상 JSON 복원",
+      "pass": true
+    },
+    {
+      "id": "T02",
+      "name": "null 거부",
+      "pass": true
+    },
+    {
+      "id": "T03",
+      "name": "지원하지 않는 버전 거부",
+      "pass": true
+    },
+    {
+      "id": "T04",
+      "name": "잘못된 화면비 거부",
+      "pass": true
+    },
+    {
+      "id": "T05",
+      "name": "빈 문구 목록 거부",
+      "pass": true
+    },
+    {
+      "id": "T06",
+      "name": "범위 밖 위치 거부",
+      "pass": true
+    },
+    {
+      "id": "T07",
+      "name": "잘못된 색상 거부",
+      "pass": true
+    },
+    {
+      "id": "T08",
+      "name": "외부 이미지 URL 거부",
+      "pass": true
+    },
+    {
+      "id": "T09",
+      "name": "디코딩 실패 시 전체 작업 보존",
+      "pass": true
+    },
+    {
+      "id": "T10",
+      "name": "이미지 로드 완료 후에만 전체 복원",
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,1172 @@
+<title>짤·카드 스튜디오</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f4f2ea;
+    --paper-2:#eae6d8;
+    --ink:#1c1a14;
+    --ink-soft:#5c5847;
+    --line:#d8d3c0;
+    --mat:#1f6a58;
+    --mat-deep:#154a3e;
+    --mat-grid:rgba(255,255,255,.16);
+    --accent:#ff5a2e;
+    --accent-ink:#3a1300;
+    --accent-2:#ffc73c;
+    --panel:#ffffff;
+    --panel-line:#e3ded0;
+    --danger:#c23b2f;
+    --danger-bg:#fbe6e0;
+    --ok:#2f7a4f;
+    --shadow: 0 1px 0 rgba(28,26,20,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#16150f;
+      --paper-2:#1e1c14;
+      --ink:#f2efe2;
+      --ink-soft:#b8b29a;
+      --line:#332f22;
+      --mat:#1a5c4c;
+      --mat-deep:#0e3b30;
+      --mat-grid:rgba(255,255,255,.10);
+      --accent:#ff6a3d;
+      --accent-ink:#fff2ea;
+      --accent-2:#ffcf5c;
+      --panel:#211f16;
+      --panel-line:#3a3626;
+      --danger:#ff6b5c;
+      --danger-bg:#3a1f1a;
+      --ok:#5fce8c;
+      --shadow: 0 1px 0 rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#16150f;
+    --paper-2:#1e1c14;
+    --ink:#f2efe2;
+    --ink-soft:#b8b29a;
+    --line:#332f22;
+    --mat:#1a5c4c;
+    --mat-deep:#0e3b30;
+    --mat-grid:rgba(255,255,255,.10);
+    --accent:#ff6a3d;
+    --accent-ink:#fff2ea;
+    --accent-2:#ffcf5c;
+    --panel:#211f16;
+    --panel-line:#3a3626;
+    --danger:#ff6b5c;
+    --danger-bg:#3a1f1a;
+    --ok:#5fce8c;
+    --shadow: 0 1px 0 rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Sans KR",system-ui,sans-serif;
+    padding:0 16px;
+    padding-block:0 40px;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  a{color:inherit;}
+
+  header.top{
+    max-width:1180px;margin:0 auto;
+    padding-block:22px 14px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+  }
+  .stamp-mark{
+    width:44px;height:44px;border-radius:50%;
+    background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Black Han Sans",sans-serif;font-size:18px;
+    flex:none;
+    box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--accent);
+    transform:rotate(-8deg);
+  }
+  .top-text h1{
+    font-family:"Black Han Sans",sans-serif;
+    font-weight:400;
+    font-size:clamp(22px,3.4vw,30px);
+    letter-spacing:.01em;
+    margin:0 0 2px;
+    text-wrap:balance;
+  }
+  .top-text p{
+    margin:0;color:var(--ink-soft);font-size:13.5px;
+  }
+  .top-badges{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+  .badge{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.03em;
+    padding:5px 9px;border-radius:20px;border:1px solid var(--line);
+    color:var(--ink-soft); text-transform:uppercase;
+  }
+
+  main{
+    max-width:1180px;margin:0 auto;
+    display:grid;grid-template-columns: minmax(0,1.35fr) minmax(320px, .95fr);
+    gap:22px;padding-top:22px;align-items:start;
+  }
+  @media (max-width: 880px){
+    main{grid-template-columns:1fr;}
+  }
+
+  section.panel{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+  }
+  .panel-head{
+    display:flex;align-items:center;gap:8px;
+    padding:14px 16px;border-bottom:1px solid var(--panel-line);
+  }
+  .panel-head .num{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;
+    color:var(--ink-soft);border:1px solid var(--line);
+    border-radius:5px;padding:1px 6px;
+  }
+  .panel-head h2{font-size:14.5px;margin:0;font-weight:700;}
+  .panel-body{padding:16px;}
+
+  /* ---- stage ---- */
+  .aspect-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .aspect-btn{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;
+    border:1px solid var(--line);background:var(--paper-2);color:var(--ink);
+    border-radius:8px;padding:7px 10px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  .aspect-btn .swatch{width:14px;height:14px;border:1.5px solid currentColor;border-radius:2px;flex:none;}
+  .aspect-btn[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;
+  }
+  .stage-wrap{
+    background:
+      linear-gradient(var(--mat-grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg, var(--mat-grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(145deg, var(--mat) 0%, var(--mat-deep) 100%);
+    border-radius:10px;
+    padding:22px;
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    min-height:260px;
+  }
+  .stage-wrap.drag-over{outline:3px dashed var(--accent-2);outline-offset:-8px;}
+  .canvas-frame{
+    position:relative;max-width:100%;
+    box-shadow:0 10px 26px rgba(0,0,0,.28);
+    border-radius:3px;overflow:hidden;
+    background:#000;
+  }
+  #stage{display:block;max-width:100%;height:auto;touch-action:none;cursor:grab;}
+  #stage:active{cursor:grabbing;}
+  .sample-tag{
+    position:absolute;top:8px;left:8px;
+    background:rgba(0,0,0,.55);color:#fff;
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;
+    padding:3px 8px;border-radius:4px;pointer-events:none;text-transform:uppercase;
+  }
+  .stage-actions{
+    display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center;
+  }
+  .stage-hint{color:var(--ink-soft);font-size:12px;margin-top:8px;}
+
+  input[type=file]{display:none;}
+  .btn{
+    font-family:"Noto Sans KR",sans-serif;font-size:13.5px;font-weight:600;
+    border-radius:9px;padding:9px 14px;cursor:pointer;border:1px solid transparent;
+    display:inline-flex;align-items:center;gap:6px;
+    transition:transform .08s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+  .btn-ghost:hover{background:var(--paper-2);}
+  .btn-sm{padding:6px 10px;font-size:12.5px;border-radius:7px;}
+  .btn-danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;}
+
+  .error-banner{
+    display:none;margin-top:12px;padding:10px 12px;border-radius:8px;
+    background:var(--danger-bg);color:var(--danger);font-size:13px;
+    border:1px solid var(--danger);align-items:flex-start;gap:8px;
+  }
+  .error-banner.show{display:flex;}
+  .error-banner b{font-weight:700;}
+  .ok-toast{
+    display:none;margin-top:12px;padding:9px 12px;border-radius:8px;
+    background:color-mix(in srgb, var(--ok) 14%, transparent);
+    color:var(--ok);font-size:12.5px;border:1px solid var(--ok);
+  }
+  .ok-toast.show{display:block;}
+
+  /* ---- sidebar ---- */
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  label.flabel{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12px;color:var(--ink-soft);margin-bottom:6px;font-weight:600;
+  }
+  label.flabel span.val{font-family:"IBM Plex Mono",monospace;color:var(--ink);}
+  textarea.txt-input{
+    width:100%;resize:vertical;min-height:56px;
+    border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+    font-family:"Noto Sans KR",sans-serif;font-size:14px;background:var(--paper-2);color:var(--ink);
+  }
+  input[type=range]{width:100%;accent-color:var(--accent);}
+  input[type=color]{
+    width:38px;height:30px;border:1px solid var(--line);border-radius:6px;padding:2px;background:var(--panel);cursor:pointer;
+  }
+  .row{display:flex;gap:10px;align-items:center;}
+  .row.between{justify-content:space-between;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .layer-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .chip{
+    font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+    border:1px solid var(--line);border-radius:20px;padding:5px 10px;cursor:pointer;
+    background:var(--paper-2);color:var(--ink-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .chip.active{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+  .chip.add{color:var(--accent);border-color:var(--accent);background:transparent;font-weight:700;}
+
+  select.select-plain{
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    background:var(--paper-2);color:var(--ink);font-family:"Noto Sans KR",sans-serif;font-size:13px;
+  }
+
+  .toggle-row{display:flex;gap:8px;}
+  .toggle{
+    flex:1;text-align:center;border:1px solid var(--line);border-radius:8px;padding:7px;
+    font-size:12.5px;cursor:pointer;color:var(--ink-soft);background:var(--paper-2);
+  }
+  .toggle.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700;}
+
+  hr.sep{border:none;border-top:1px solid var(--panel-line);margin:16px 0;}
+
+  .tpl-form{display:flex;gap:8px;margin-bottom:12px;}
+  .tpl-form input[type=text]{
+    flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    background:var(--paper-2);color:var(--ink);font-size:13px;font-family:"Noto Sans KR",sans-serif;
+  }
+  .tpl-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;}
+  .tpl-item{
+    display:flex;align-items:center;gap:10px;border:1px solid var(--panel-line);border-radius:9px;padding:8px;
+  }
+  .tpl-thumb{
+    width:44px;height:44px;border-radius:5px;object-fit:cover;flex:none;background:var(--paper-2);border:1px solid var(--line);
+  }
+  .tpl-meta{flex:1;min-width:0;}
+  .tpl-meta .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tpl-meta .sub{font-size:11px;color:var(--ink-soft);font-family:"IBM Plex Mono",monospace;}
+  .tpl-actions{display:flex;gap:5px;flex:none;}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--paper-2);border-radius:6px;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--ink-soft);
+  }
+  .icon-btn:hover{color:var(--ink);}
+  .empty-note{color:var(--ink-soft);font-size:12.5px;padding:6px 2px;}
+
+  .persist-note{
+    font-size:11px;color:var(--ink-soft);margin-top:10px;line-height:1.5;
+    padding-top:10px;border-top:1px dashed var(--panel-line);
+  }
+
+  footer{
+    max-width:1180px;margin:30px auto 0;color:var(--ink-soft);font-size:11.5px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+  }
+</style>
+
+<header class="top">
+  <div class="stamp-mark">짤</div>
+  <div class="top-text">
+    <h1>짤·카드 스튜디오</h1>
+    <p>이미지에 문구를 얹어 SNS용 카드·밈을 바로 만들고 내려받으세요.</p>
+  </div>
+  <div class="top-badges">
+    <span class="badge mono">PNG · JPEG</span>
+    <span class="badge mono">한글 지원</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel" aria-labelledby="stage-h">
+    <div class="panel-head">
+      <span class="num">1</span>
+      <h2 id="stage-h">이미지 · 비율</h2>
+    </div>
+    <div class="panel-body">
+      <div class="aspect-row" id="aspectRow" role="group" aria-label="화면비 선택"></div>
+
+      <div class="stage-wrap" id="stageWrap">
+        <div class="canvas-frame" id="canvasFrame">
+          <canvas id="stage"></canvas>
+          <span class="sample-tag" id="sampleTag" hidden>예시 이미지 · 직접 불러오면 사라집니다</span>
+        </div>
+      </div>
+
+      <div class="stage-actions">
+        <label class="btn btn-primary" for="fileInput">이미지 불러오기 (PNG·JPEG)</label>
+        <input type="file" id="fileInput" accept="image/png,image/jpeg,.png,.jpg,.jpeg">
+        <button class="btn btn-ghost" id="clearImgBtn" type="button">이미지 지우기</button>
+        <span class="mono stage-hint" id="imgInfo" style="margin-left:auto;"></span>
+      </div>
+      <p class="stage-hint">이미지를 캔버스 위로 끌어다 놓아도 됩니다. 지원 형식: PNG, JPEG · 최대 15MB.</p>
+
+      <div class="error-banner" id="errBanner" role="alert">
+        <span>⚠</span>
+        <span id="errText"></span>
+      </div>
+      <div class="ok-toast" id="okToast"></div>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <section class="panel" aria-labelledby="text-h">
+      <div class="panel-head">
+        <span class="num">2</span>
+        <h2 id="text-h">문구 편집</h2>
+      </div>
+      <div class="panel-body">
+        <div class="layer-chips" id="layerChips"></div>
+
+        <div class="field">
+          <label class="flabel" for="layerText">문구 내용</label>
+          <textarea class="txt-input" id="layerText" maxlength="120" placeholder="여기에 문구를 입력하세요 (줄바꿈 가능)"></textarea>
+        </div>
+
+        <div class="field">
+          <label class="flabel">가로 위치 <span class="val" id="xVal">50%</span></label>
+          <input type="range" id="xRange" min="0" max="100" value="50">
+        </div>
+        <div class="field">
+          <label class="flabel">세로 위치 <span class="val" id="yVal">50%</span></label>
+          <input type="range" id="yRange" min="0" max="100" value="50">
+        </div>
+        <div class="field">
+          <label class="flabel">문구 크기 <span class="val" id="sizeVal">8%</span></label>
+          <input type="range" id="sizeRange" min="3" max="22" step="0.5" value="8">
+        </div>
+
+        <div class="field grid2">
+          <div>
+            <label class="flabel" for="colorInput">문구 색</label>
+            <div class="row"><input type="color" id="colorInput" value="#ffffff"><span class="mono" id="colorVal" style="font-size:12px;color:var(--ink-soft);">#ffffff</span></div>
+          </div>
+          <div>
+            <label class="flabel">스타일</label>
+            <div class="toggle-row">
+              <div class="toggle on" id="boldToggle">굵게</div>
+              <div class="toggle on" id="strokeToggle">외곽선</div>
+            </div>
+          </div>
+        </div>
+
+        <hr class="sep">
+        <div class="row between">
+          <button class="btn btn-ghost btn-sm" id="addLayerBtn" type="button">+ 문구 추가</button>
+          <button class="btn btn-danger btn-sm" id="delLayerBtn" type="button">이 문구 삭제</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="export-h">
+      <div class="panel-head">
+        <span class="num">3</span>
+        <h2 id="export-h">내려받기</h2>
+      </div>
+      <div class="panel-body">
+        <div class="row" style="margin-bottom:10px;">
+          <select class="select-plain" id="formatSelect">
+            <option value="png">PNG (배경 투명 유지)</option>
+            <option value="jpeg">JPEG (파일 용량 작음)</option>
+          </select>
+          <button class="btn btn-primary" id="downloadBtn" type="button" style="margin-left:auto;">완성 이미지 저장</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" id="exportJsonBtn" type="button">JSON 내보내기</button>
+          <label class="btn btn-ghost btn-sm" for="importJsonInput">JSON 불러와 복원</label>
+          <input type="file" id="importJsonInput" accept="application/json,.json">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="tpl-h">
+      <div class="panel-head">
+        <span class="num">4</span>
+        <h2 id="tpl-h">내 템플릿</h2>
+      </div>
+      <div class="panel-body">
+        <div class="tpl-form">
+          <input type="text" id="tplNameInput" placeholder="템플릿 이름 (예: 축하 카드)" maxlength="40">
+          <button class="btn btn-primary btn-sm" id="saveTplBtn" type="button">저장</button>
+        </div>
+        <div class="tpl-list" id="tplList"></div>
+        <p class="empty-note" id="tplEmpty">아직 저장한 템플릿이 없습니다. 카드를 완성한 뒤 이름을 짓고 저장해 보세요.</p>
+        <p class="persist-note" id="persistNote"></p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <span>로그인이나 계정 없이 바로 사용할 수 있습니다.</span>
+  <span class="mono">이미지는 이 브라우저 안에서만 처리되며 서버로 전송되지 않습니다.</span>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- constants ---------------- */
+  var ASPECTS = [
+    {id:"1:1", w:1080, h:1080, label:"1:1", sub:"정사각형 피드"},
+    {id:"4:5", w:1080, h:1350, label:"4:5", sub:"세로형 피드"},
+    {id:"16:9", w:1280, h:720, label:"16:9", sub:"가로형 썸네일"}
+  ];
+  var MAX_FILE_BYTES = 15 * 1024 * 1024;
+  var TPL_STORE_KEY = "stampStudio.templates.v1";
+  var MAX_TPL_DOC_BYTES = 230000; // keep each stored template comfortably small
+
+  /* ---------------- state ---------------- */
+  var state = {
+    aspectId: "1:1",
+    image: null,        // {img, isSample}
+    layers: [],
+    activeLayerId: null
+  };
+  var dragInfo = null; // {layerId, offsetXpct, offsetYpct}
+
+  /* ---------------- dom ---------------- */
+  var $ = function(id){ return document.getElementById(id); };
+  var canvas = $("stage");
+  var ctx = canvas.getContext("2d");
+  var stageWrap = $("stageWrap");
+  var sampleTag = $("sampleTag");
+  var aspectRow = $("aspectRow");
+  var errBanner = $("errBanner");
+  var errText = $("errText");
+  var okToast = $("okToast");
+  var imgInfo = $("imgInfo");
+  var layerChips = $("layerChips");
+  var layerText = $("layerText");
+  var xRange = $("xRange"), yRange = $("yRange"), sizeRange = $("sizeRange");
+  var xVal = $("xVal"), yVal = $("yVal"), sizeVal = $("sizeVal");
+  var colorInput = $("colorInput"), colorVal = $("colorVal");
+  var boldToggle = $("boldToggle"), strokeToggle = $("strokeToggle");
+
+  var uid = function(prefix){ return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); };
+
+  function currentAspect(){
+    for (var i=0;i<ASPECTS.length;i++){ if (ASPECTS[i].id === state.aspectId) return ASPECTS[i]; }
+    return ASPECTS[0];
+  }
+
+  function activeLayer(){
+    for (var i=0;i<state.layers.length;i++){ if (state.layers[i].id === state.activeLayerId) return state.layers[i]; }
+    return null;
+  }
+
+  /* ---------------- messages ---------------- */
+  var errTimer = null, okTimer = null;
+  function showError(msg){
+    errText.textContent = msg;
+    errBanner.classList.add("show");
+    clearTimeout(errTimer);
+    errTimer = setTimeout(function(){ errBanner.classList.remove("show"); }, 7000);
+  }
+  function clearError(){ errBanner.classList.remove("show"); }
+  function showOk(msg){
+    okToast.textContent = msg;
+    okToast.classList.add("show");
+    clearTimeout(okTimer);
+    okTimer = setTimeout(function(){ okToast.classList.remove("show"); }, 3200);
+  }
+
+  /* ---------------- aspect UI ---------------- */
+  function buildAspectRow(){
+    aspectRow.innerHTML = "";
+    ASPECTS.forEach(function(a){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "aspect-btn";
+      b.setAttribute("aria-pressed", a.id === state.aspectId ? "true" : "false");
+      var ratioStyle = a.w >= a.h ? (a.w > a.h ? "width:14px;height:" + Math.round(14*a.h/a.w) + "px;" : "width:14px;height:14px;") : "height:14px;width:" + Math.round(14*a.w/a.h) + "px;";
+      b.innerHTML = '<span class="swatch" style="' + ratioStyle + '"></span>' + a.label + ' <span class="mono" style="opacity:.65;font-size:10.5px;">' + a.sub + '</span>';
+      b.addEventListener("click", function(){
+        state.aspectId = a.id;
+        buildAspectRow();
+        setupCanvasSize();
+        render();
+      });
+      aspectRow.appendChild(b);
+    });
+  }
+
+  function setupCanvasSize(){
+    var a = currentAspect();
+    canvas.width = a.w;
+    canvas.height = a.h;
+    canvas.style.width = Math.min(a.w, 640) + "px";
+  }
+
+  /* ---------------- file validation ---------------- */
+  function sniffKind(bytes){
+    function eq(offset, arr){
+      for (var i=0;i<arr.length;i++){ if (bytes[offset+i] !== arr[i]) return false; }
+      return true;
+    }
+    if (bytes.length >= 8 && eq(0,[0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A])) return "png";
+    if (bytes.length >= 3 && eq(0,[0xFF,0xD8,0xFF])) return "jpeg";
+    if (bytes.length >= 3 && eq(0,[0x47,0x49,0x46])) return "gif";
+    if (bytes.length >= 4 && eq(0,[0x25,0x50,0x44,0x46])) return "pdf";
+    if (bytes.length >= 4 && eq(0,[0x52,0x49,0x46,0x46])) return "riff/webp";
+    if (bytes.length >= 2 && eq(0,[0x4D,0x5A])) return "exe";
+    if (bytes.length >= 4 && (eq(0,[0x50,0x4B,0x03,0x04]))) return "zip/office";
+    if (bytes.length >= 1 && (bytes[0] === 0x3C)) return "svg/xml/html";
+    return null;
+  }
+
+  function loadImageFromBlob(blob){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(blob);
+      var im = new Image();
+      im.onload = function(){ resolve({img: im, url: url}); };
+      im.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("decode-failed")); };
+      im.src = url;
+    });
+  }
+
+  function validateAndLoad(file){
+    return new Promise(function(resolve){
+      if (!file){ resolve({ok:false, reason:"파일을 찾을 수 없습니다."}); return; }
+      if (file.size === 0){ resolve({ok:false, reason:"빈 파일입니다 (0바이트). 다른 파일을 선택해 주세요."}); return; }
+      if (file.size > MAX_FILE_BYTES){
+        resolve({ok:false, reason:"파일이 너무 큽니다 (" + (file.size/1024/1024).toFixed(1) + "MB). 최대 15MB까지 지원합니다."});
+        return;
+      }
+      var reader = new FileReader();
+      reader.onerror = function(){ resolve({ok:false, reason:"파일을 읽는 중 오류가 발생했습니다. 파일이 손상되었을 수 있습니다."}); };
+      reader.onload = function(){
+        var buf = reader.result;
+        var head = new Uint8Array(buf.slice(0, 16));
+        var kind = sniffKind(head);
+        if (kind !== "png" && kind !== "jpeg"){
+          var label = {
+            "gif":"GIF", "pdf":"PDF", "riff/webp":"WEBP/AVI 계열", "exe":"실행 파일(EXE)",
+            "zip/office":"ZIP/오피스 문서", "svg/xml/html":"SVG 또는 텍스트(XML/HTML)"
+          }[kind] || ("알 수 없는 형식" + (file.name ? " · " + file.name.split(".").pop().toUpperCase() : ""));
+          resolve({ok:false, reason:"지원하지 않는 파일 형식입니다 (" + label + " 감지). PNG 또는 JPEG 파일만 불러올 수 있습니다."});
+          return;
+        }
+        var mime = kind === "png" ? "image/png" : "image/jpeg";
+        var blob = new Blob([buf], {type: mime});
+        loadImageFromBlob(blob).then(function(res){
+          resolve({ok:true, img: res.img, kind: kind, size: file.size, name: file.name || ("image." + kind)});
+        }).catch(function(){
+          resolve({ok:false, reason:"파일 신호는 " + kind.toUpperCase() + " 형식이지만 이미지 데이터가 손상되어 열 수 없습니다."});
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  function applyLoadedImage(res){
+    state.image = {img: res.img, isSample: false, kind: res.kind, name: res.name};
+    sampleTag.hidden = true;
+    imgInfo.textContent = res.name + " · " + (res.size/1024).toFixed(0) + "KB · " + res.kind.toUpperCase();
+    clearError();
+    showOk("이미지를 불러왔습니다.");
+    render();
+  }
+
+  function handleFiles(fileList){
+    var file = fileList && fileList[0];
+    if (!file) return;
+    validateAndLoad(file).then(function(res){
+      if (res.ok){
+        applyLoadedImage(res);
+      } else {
+        // existing work (image + text layers) is left untouched
+        showError(res.reason);
+      }
+    });
+  }
+
+  $("fileInput").addEventListener("change", function(e){
+    handleFiles(e.target.files);
+    e.target.value = "";
+  });
+  $("clearImgBtn").addEventListener("click", function(){
+    state.image = null;
+    imgInfo.textContent = "";
+    sampleTag.hidden = true;
+    render();
+  });
+  ["dragenter","dragover"].forEach(function(ev){
+    stageWrap.addEventListener(ev, function(e){ e.preventDefault(); stageWrap.classList.add("drag-over"); });
+  });
+  ["dragleave","drop"].forEach(function(ev){
+    stageWrap.addEventListener(ev, function(e){ e.preventDefault(); stageWrap.classList.remove("drag-over"); });
+  });
+  stageWrap.addEventListener("drop", function(e){
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  /* ---------------- layers ---------------- */
+  function newLayer(overrides){
+    var base = {
+      id: uid("layer"),
+      text: "새 문구",
+      x: 50, y: 50, size: 8,
+      color: "#ffffff",
+      bold: true, stroke: true
+    };
+    for (var k in overrides){ base[k] = overrides[k]; }
+    return base;
+  }
+
+  function addLayer(overrides, opts){
+    var l = newLayer(overrides || {});
+    state.layers.push(l);
+    state.activeLayerId = l.id;
+    renderLayerChips();
+    syncControlsFromActive();
+    render();
+    return l;
+  }
+
+  function deleteActiveLayer(){
+    if (state.layers.length <= 1){
+      showError("문구는 최소 1개 이상 있어야 합니다.");
+      return;
+    }
+    var idx = state.layers.findIndex(function(l){ return l.id === state.activeLayerId; });
+    if (idx === -1) return;
+    state.layers.splice(idx,1);
+    state.activeLayerId = state.layers[Math.max(0, idx-1)].id;
+    renderLayerChips();
+    syncControlsFromActive();
+    render();
+  }
+
+  function selectLayer(id){
+    state.activeLayerId = id;
+    renderLayerChips();
+    syncControlsFromActive();
+    render();
+  }
+
+  function renderLayerChips(){
+    layerChips.innerHTML = "";
+    state.layers.forEach(function(l, i){
+      var c = document.createElement("div");
+      c.className = "chip" + (l.id === state.activeLayerId ? " active" : "");
+      c.textContent = (l.text || "(빈 문구)").trim().slice(0,14) || ("문구 " + (i+1));
+      c.title = l.text;
+      c.addEventListener("click", function(){ selectLayer(l.id); });
+      layerChips.appendChild(c);
+    });
+    var addC = document.createElement("div");
+    addC.className = "chip add";
+    addC.textContent = "+ 추가";
+    addC.addEventListener("click", function(){ addLayer({text:"새 문구", y: 30 + state.layers.length*12}); });
+    layerChips.appendChild(addC);
+  }
+
+  function syncControlsFromActive(){
+    var l = activeLayer();
+    if (!l) return;
+    layerText.value = l.text;
+    xRange.value = l.x; yRange.value = l.y; sizeRange.value = l.size;
+    xVal.textContent = Math.round(l.x) + "%";
+    yVal.textContent = Math.round(l.y) + "%";
+    sizeVal.textContent = l.size + "%";
+    colorInput.value = l.color;
+    colorVal.textContent = l.color;
+    boldToggle.classList.toggle("on", !!l.bold);
+    strokeToggle.classList.toggle("on", !!l.stroke);
+  }
+
+  layerText.addEventListener("input", function(){
+    var l = activeLayer(); if (!l) return;
+    l.text = layerText.value;
+    renderLayerChips();
+    render();
+  });
+  xRange.addEventListener("input", function(){
+    var l = activeLayer(); if (!l) return;
+    l.x = parseFloat(xRange.value);
+    xVal.textContent = Math.round(l.x) + "%";
+    render();
+  });
+  yRange.addEventListener("input", function(){
+    var l = activeLayer(); if (!l) return;
+    l.y = parseFloat(yRange.value);
+    yVal.textContent = Math.round(l.y) + "%";
+    render();
+  });
+  sizeRange.addEventListener("input", function(){
+    var l = activeLayer(); if (!l) return;
+    l.size = parseFloat(sizeRange.value);
+    sizeVal.textContent = l.size + "%";
+    render();
+  });
+  colorInput.addEventListener("input", function(){
+    var l = activeLayer(); if (!l) return;
+    l.color = colorInput.value;
+    colorVal.textContent = l.color;
+    render();
+  });
+  boldToggle.addEventListener("click", function(){
+    var l = activeLayer(); if (!l) return;
+    l.bold = !l.bold;
+    boldToggle.classList.toggle("on", l.bold);
+    render();
+  });
+  strokeToggle.addEventListener("click", function(){
+    var l = activeLayer(); if (!l) return;
+    l.stroke = !l.stroke;
+    strokeToggle.classList.toggle("on", l.stroke);
+    render();
+  });
+  $("addLayerBtn").addEventListener("click", function(){ addLayer({text:"새 문구", y: 30 + state.layers.length*12}); });
+  $("delLayerBtn").addEventListener("click", deleteActiveLayer);
+
+  /* ---------------- render ---------------- */
+  function wrapLines(text){
+    return (text || "").split(/\r\n|\r|\n/);
+  }
+
+  function drawLayer(l){
+    var lines = wrapLines(l.text);
+    if (lines.length === 1 && lines[0] === "") return;
+    var fontPx = Math.max(6, (l.size/100) * canvas.height);
+    var weight = l.bold ? "900" : "700";
+    ctx.font = weight + " " + fontPx.toFixed(1) + "px 'Noto Sans KR', 'Black Han Sans', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    var lineHeight = fontPx * 1.22;
+    var cx = (l.x/100) * canvas.width;
+    var cy = (l.y/100) * canvas.height;
+    var totalH = lineHeight * lines.length;
+    var startY = cy - totalH/2 + lineHeight/2;
+
+    lines.forEach(function(line, i){
+      var ly = startY + i*lineHeight;
+      if (l.stroke){
+        ctx.lineWidth = Math.max(2, fontPx * 0.10);
+        ctx.strokeStyle = "rgba(0,0,0,0.85)";
+        ctx.lineJoin = "round";
+        ctx.miterLimit = 2;
+        ctx.strokeText(line, cx, ly);
+      }
+      ctx.fillStyle = l.color || "#ffffff";
+      ctx.fillText(line, cx, ly);
+    });
+  }
+
+  function drawEmptyPlaceholder(){
+    ctx.save();
+    ctx.fillStyle = "#e9e4d3";
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+    var step = Math.round(canvas.width/18);
+    ctx.strokeStyle = "rgba(28,26,20,0.06)";
+    ctx.lineWidth = 1;
+    for (var x=0;x<=canvas.width;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); }
+    for (var y=0;y<=canvas.height;y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+    ctx.fillStyle = "rgba(28,26,20,0.35)";
+    ctx.font = "600 " + Math.round(canvas.width*0.032) + "px 'Noto Sans KR', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("이미지를 불러오세요", canvas.width/2, canvas.height/2);
+    ctx.restore();
+  }
+
+  function render(){
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    if (state.image && state.image.img){
+      var img = state.image.img;
+      var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      var scale = Math.max(canvas.width/iw, canvas.height/ih);
+      var dw = iw*scale, dh = ih*scale;
+      var dx = (canvas.width-dw)/2, dy = (canvas.height-dh)/2;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img, dx, dy, dw, dh);
+    } else {
+      drawEmptyPlaceholder();
+    }
+    state.layers.forEach(drawLayer);
+    sampleTag.hidden = !(state.image && state.image.isSample);
+  }
+
+  /* ---------------- drag-to-position on canvas ---------------- */
+  function pointerToPct(clientX, clientY){
+    var rect = canvas.getBoundingClientRect();
+    var px = (clientX - rect.left) / rect.width * 100;
+    var py = (clientY - rect.top) / rect.height * 100;
+    return {x: Math.max(0, Math.min(100, px)), y: Math.max(0, Math.min(100, py))};
+  }
+  function hitTestLayer(pct){
+    for (var i=state.layers.length-1;i>=0;i--){
+      var l = state.layers[i];
+      var dx = Math.abs(l.x - pct.x), dy = Math.abs(l.y - pct.y);
+      if (dx < 18 && dy < 12) return l;
+    }
+    return null;
+  }
+  canvas.addEventListener("pointerdown", function(e){
+    var pct = pointerToPct(e.clientX, e.clientY);
+    var l = hitTestLayer(pct);
+    if (!l) return;
+    selectLayer(l.id);
+    dragInfo = {layerId: l.id};
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", function(e){
+    if (!dragInfo) return;
+    var l = activeLayer();
+    if (!l || l.id !== dragInfo.layerId) return;
+    var pct = pointerToPct(e.clientX, e.clientY);
+    l.x = Math.round(pct.x*10)/10;
+    l.y = Math.round(pct.y*10)/10;
+    xRange.value = l.x; yRange.value = l.y;
+    xVal.textContent = Math.round(l.x) + "%";
+    yVal.textContent = Math.round(l.y) + "%";
+    render();
+  });
+  function endDrag(){ dragInfo = null; }
+  canvas.addEventListener("pointerup", endDrag);
+  canvas.addEventListener("pointercancel", endDrag);
+
+  /* ---------------- sample seed image ---------------- */
+  function buildSampleImage(){
+    var a = currentAspect();
+    var off = document.createElement("canvas");
+    off.width = a.w; off.height = a.h;
+    var octx = off.getContext("2d");
+    var g = octx.createLinearGradient(0,0,a.w,a.h);
+    g.addColorStop(0, "#ffb37a");
+    g.addColorStop(0.55, "#ff5a2e");
+    g.addColorStop(1, "#7a1f3d");
+    octx.fillStyle = g;
+    octx.fillRect(0,0,a.w,a.h);
+    octx.globalAlpha = 0.16;
+    octx.strokeStyle = "#ffffff";
+    octx.lineWidth = 2;
+    for (var r=60; r<Math.max(a.w,a.h); r+=70){
+      octx.beginPath();
+      octx.arc(a.w*0.78, a.h*0.22, r, 0, Math.PI*2);
+      octx.stroke();
+    }
+    octx.globalAlpha = 1;
+    var img = new Image();
+    img.src = off.toDataURL("image/png");
+    return img;
+  }
+
+  function loadSample(){
+    var img = buildSampleImage();
+    img.onload = function(){
+      state.image = {img: img, isSample: true};
+      render();
+    };
+  }
+
+  /* ---------------- download ---------------- */
+  function blobFromCanvas(mime, quality){
+    return new Promise(function(resolve){
+      canvas.toBlob(function(b){ resolve(b); }, mime, quality);
+    });
+  }
+  async function saveFile(filename, blob){
+    if (window.claude && typeof window.claude.use === "function"){
+      try {
+        var downloads = await window.claude.use("downloads");
+        if (downloads){
+          await downloads.save({filename: filename, data: blob});
+          return true;
+        }
+      } catch(e){ /* fall through to browser download */ }
+    }
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    return true;
+  }
+
+  $("downloadBtn").addEventListener("click", function(){
+    var fmt = $("formatSelect").value;
+    var mime = fmt === "png" ? "image/png" : "image/jpeg";
+    blobFromCanvas(mime, fmt === "jpeg" ? 0.92 : undefined).then(function(blob){
+      if (!blob){ showError("이미지를 만드는 데 실패했습니다. 다시 시도해 주세요."); return; }
+      saveFile("card-" + Date.now() + "." + fmt, blob).then(function(){
+        showOk("완성 이미지를 저장했습니다.");
+      }).catch(function(){
+        showError("저장이 취소되었거나 실패했습니다.");
+      });
+    });
+  });
+
+  /* ---------------- JSON export / import (project restore) ---------------- */
+  function projectToJSON(){
+    return {
+      version: 1,
+      aspectId: state.aspectId,
+      layers: state.layers,
+      image: (state.image && !state.image.isSample) ? state.image.img.src : null
+    };
+  }
+  $("exportJsonBtn").addEventListener("click", function(){
+    var data = JSON.stringify(projectToJSON(), null, 2);
+    var blob = new Blob([data], {type:"application/json"});
+    saveFile("card-project-" + Date.now() + ".json", blob).then(function(){
+      showOk("JSON 파일로 내보냈습니다.");
+    });
+  });
+  function restoreFromProject(proj){
+    // Validate before touching the current project; commit only after image decode succeeds.
+    function validNumber(value, min, max){
+      return typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
+    }
+    function validLayer(layer){
+      return layer && typeof layer === "object" && !Array.isArray(layer) &&
+        typeof layer.id === "string" && layer.id.length > 0 &&
+        typeof layer.text === "string" && layer.text.length <= 120 &&
+        validNumber(layer.x, 0, 100) && validNumber(layer.y, 0, 100) &&
+        validNumber(layer.size, 3, 22) &&
+        typeof layer.color === "string" && /^#[0-9a-f]{6}$/i.test(layer.color) &&
+        typeof layer.bold === "boolean" && typeof layer.stroke === "boolean";
+    }
+    if (!proj || typeof proj !== "object" || Array.isArray(proj) || proj.version !== 1){
+      showError("지원하는 version 1 작업 JSON이 아닙니다. 기존 작업은 유지됩니다."); return;
+    }
+    if (!ASPECTS.some(function(a){ return a.id === proj.aspectId; }) ||
+        !Array.isArray(proj.layers) || !proj.layers.length || !proj.layers.every(validLayer) ||
+        new Set(proj.layers.map(function(l){ return l.id; })).size !== proj.layers.length){
+      showError("JSON의 화면비 또는 문구 데이터가 올바르지 않습니다. 기존 작업은 유지됩니다."); return;
+    }
+    if (proj.image !== null && (typeof proj.image !== "string" ||
+        !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/.test(proj.image))){
+      showError("JSON 이미지는 PNG/JPEG 데이터여야 합니다. 기존 작업은 유지됩니다."); return;
+    }
+    // Transaction: prepare everything first, commit once (after image load if any).
+    var token = (restoreFromProject.seq = (restoreFromProject.seq || 0) + 1);
+    var nextAspectId = proj.aspectId;
+    var nextLayers = proj.layers.map(function(l){ return newLayer(l); });
+    function commit(nextImage){
+      if (token !== restoreFromProject.seq) return; // a newer restore superseded this one
+      state.aspectId = nextAspectId;
+      state.layers = nextLayers;
+      state.activeLayerId = nextLayers[0].id;
+      state.image = nextImage;
+      buildAspectRow();
+      setupCanvasSize();
+      renderLayerChips();
+      syncControlsFromActive();
+      if (nextImage) imgInfo.textContent = "JSON에서 복원된 이미지";
+      render();
+      clearError();
+      showOk("JSON에서 작업을 복원했습니다.");
+    }
+    if (!proj.image){ commit(null); return; }
+    var im = new Image();
+    im.onload = function(){
+      im.onload = im.onerror = null;
+      commit({img: im, isSample:false, kind:"restored", name:"복원된 이미지"});
+    };
+    im.onerror = function(){
+      im.onload = im.onerror = null;
+      if (token !== restoreFromProject.seq) return;
+      showError("JSON에 포함된 이미지 데이터를 불러오지 못했습니다. 기존 작업은 유지됩니다.");
+    };
+    im.src = proj.image;
+  }
+  $("importJsonInput").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!/\.json$/i.test(file.name) && file.type !== "application/json"){
+      showError("JSON 파일만 불러올 수 있습니다.");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var proj = JSON.parse(reader.result);
+        restoreFromProject(proj);
+      } catch(err){
+        showError("JSON 파일을 해석할 수 없습니다. 파일이 손상되었을 수 있습니다.");
+      }
+    };
+    reader.onerror = function(){ showError("JSON 파일을 읽는 중 오류가 발생했습니다."); };
+    reader.readAsText(file);
+  });
+
+  /* ---------------- templates (create / load / edit / delete) ---------------- */
+  var tplList = $("tplList"), tplEmpty = $("tplEmpty"), persistNote = $("persistNote");
+  var localOnly = false;
+
+  function loadTemplateStore(){
+    try {
+      var raw = localStorage.getItem(TPL_STORE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+  function saveTemplateStore(list){
+    try {
+      localStorage.setItem(TPL_STORE_KEY, JSON.stringify(list));
+      return true;
+    } catch(e){
+      showError("템플릿 저장 공간이 가득 찼습니다. 오래된 템플릿을 삭제해 주세요.");
+      return false;
+    }
+  }
+
+  function makeThumb(maxDim, quality, cb){
+    var off = document.createElement("canvas");
+    var scale = Math.min(1, maxDim / Math.max(canvas.width, canvas.height));
+    off.width = Math.round(canvas.width*scale);
+    off.height = Math.round(canvas.height*scale);
+    var octx = off.getContext("2d");
+    octx.drawImage(canvas, 0, 0, off.width, off.height);
+    cb(off.toDataURL("image/jpeg", quality));
+  }
+
+  function renderTemplateList(){
+    var list = loadTemplateStore();
+    tplList.innerHTML = "";
+    tplEmpty.style.display = list.length ? "none" : "block";
+    list.slice().reverse().forEach(function(t){
+      var row = document.createElement("div");
+      row.className = "tpl-item";
+      var img = document.createElement("img");
+      img.className = "tpl-thumb";
+      img.src = t.thumb || "";
+      img.alt = t.name;
+      var meta = document.createElement("div");
+      meta.className = "tpl-meta";
+      var d = new Date(t.createdAt);
+      meta.innerHTML = '<div class="name"></div><div class="sub"></div>';
+      meta.querySelector(".name").textContent = t.name;
+      meta.querySelector(".sub").textContent = t.aspectId + " · " + d.toLocaleDateString("ko-KR");
+      var actions = document.createElement("div");
+      actions.className = "tpl-actions";
+      var loadBtn = document.createElement("button");
+      loadBtn.className = "icon-btn"; loadBtn.title = "불러오기"; loadBtn.textContent = "⤴";
+      loadBtn.addEventListener("click", function(){ loadTemplate(t.id); });
+      var renameBtn = document.createElement("button");
+      renameBtn.className = "icon-btn"; renameBtn.title = "이름 수정"; renameBtn.textContent = "✎";
+      renameBtn.addEventListener("click", function(){ renameTemplate(t.id); });
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn"; delBtn.title = "삭제"; delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){ deleteTemplate(t.id); });
+      actions.appendChild(loadBtn); actions.appendChild(renameBtn); actions.appendChild(delBtn);
+      row.appendChild(img); row.appendChild(meta); row.appendChild(actions);
+      tplList.appendChild(row);
+    });
+  }
+
+  function saveTemplate(){
+    var name = $("tplNameInput").value.trim();
+    if (!name){ showError("템플릿 이름을 입력해 주세요."); return; }
+    makeThumb(70, 0.55, function(thumb){
+      makeThumb(480, 0.6, function(imageData){
+        var tpl = {
+          id: uid("tpl"),
+          name: name,
+          createdAt: Date.now(),
+          aspectId: state.aspectId,
+          layers: state.layers,
+          thumb: thumb,
+          image: state.image ? imageData : null
+        };
+        var size = JSON.stringify(tpl).length;
+        if (size > MAX_TPL_DOC_BYTES){
+          makeThumb(300, 0.45, function(smallerImage){
+            tpl.image = smallerImage;
+            finalizeSave(tpl);
+          });
+        } else {
+          finalizeSave(tpl);
+        }
+      });
+    });
+  }
+  function finalizeSave(tpl){
+    var list = loadTemplateStore();
+    list.push(tpl);
+    if (saveTemplateStore(list)){
+      $("tplNameInput").value = "";
+      renderTemplateList();
+      showOk("템플릿 \"" + tpl.name + "\"을(를) 저장했습니다.");
+    }
+  }
+
+  function loadTemplate(id){
+    var list = loadTemplateStore();
+    var tpl = list.find(function(t){ return t.id === id; });
+    if (!tpl){ showError("템플릿을 찾을 수 없습니다."); return; }
+    restoreFromProject({aspectId: tpl.aspectId, layers: tpl.layers, image: tpl.image});
+  }
+  function renameTemplate(id){
+    var list = loadTemplateStore();
+    var tpl = list.find(function(t){ return t.id === id; });
+    if (!tpl) return;
+    var name = prompt("새 템플릿 이름을 입력하세요.", tpl.name);
+    if (name === null) return;
+    name = name.trim();
+    if (!name){ showError("이름은 비워둘 수 없습니다."); return; }
+    tpl.name = name;
+    if (saveTemplateStore(list)) renderTemplateList();
+  }
+  function deleteTemplate(id){
+    var list = loadTemplateStore();
+    var next = list.filter(function(t){ return t.id !== id; });
+    if (saveTemplateStore(next)){
+      renderTemplateList();
+      showOk("템플릿을 삭제했습니다.");
+    }
+  }
+  $("saveTplBtn").addEventListener("click", saveTemplate);
+  persistNote.textContent = "템플릿은 이 브라우저에 안전하게 저장됩니다. 다른 기기로 옮기려면 위의 \"JSON 내보내기\"로 백업한 뒤 \"JSON 불러와 복원\"을 사용하세요.";
+
+  /* ---------------- init ---------------- */
+  function init(){
+    buildAspectRow();
+    setupCanvasSize();
+    state.layers = [
+      newLayer({text:"예시 문구입니다", x:50, y:78, size:9, color:"#ffffff", bold:true, stroke:true}),
+      newLayer({text:"오늘도 화이팅", x:50, y:14, size:6, color:"#ffe27a", bold:true, stroke:true})
+    ];
+    state.activeLayerId = state.layers[0].id;
+    renderLayerChips();
+    syncControlsFromActive();
+    loadSample();
+    renderTemplateList();
+  }
+  init();
+
+  /* hot-reload support for Artifact publish */
+  try {
+    if (window.claude && window.claude.hot){
+      var start = function(){ /* state already initialized above */ };
+      if (window.claude.hot.ready) window.claude.hot.ready(start); else start();
+    }
+  } catch(e){}
+})();
+</script>

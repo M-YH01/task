@@ -1,0 +1,16 @@
+{
+  "valid": {"version":1,"aspectId":"4:5","layers":[{"id":"sample","text":"안녕하세요","x":50,"y":50,"size":8,"color":"#ffffff","bold":true,"stroke":true}],"image":null},
+  "png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+  "cases": [
+    {"id":"T01","name":"정상 JSON 복원","mode":"valid"},
+    {"id":"T02","name":"null 거부","mode":"reject","root":null},
+    {"id":"T03","name":"지원하지 않는 버전 거부","mode":"reject","patch":{"version":2}},
+    {"id":"T04","name":"잘못된 화면비 거부","mode":"reject","patch":{"aspectId":"2:3"}},
+    {"id":"T05","name":"빈 문구 목록 거부","mode":"reject","patch":{"layers":[]}},
+    {"id":"T06","name":"범위 밖 위치 거부","mode":"reject","layerPatch":{"x":101}},
+    {"id":"T07","name":"잘못된 색상 거부","mode":"reject","layerPatch":{"color":"red"}},
+    {"id":"T08","name":"외부 이미지 URL 거부","mode":"reject","patch":{"image":"https://example.com/image.png"},"noImageRequest":true},
+    {"id":"T09","name":"디코딩 실패 시 전체 작업 보존","mode":"imageError","patch":{"image":"data:image/png;base64,AAAA"}},
+    {"id":"T10","name":"이미지 로드 완료 후에만 전체 복원","mode":"imageLoad"}
+  ]
+}
