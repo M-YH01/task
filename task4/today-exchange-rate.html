@@ -1,0 +1,577 @@
+<title>오늘의 환율</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --surface: #ffffff;
+    --surface-2: #efeee8;
+    --ink: #1c1d1a;
+    --ink-dim: #5c5d56;
+    --ink-faint: #8a8b83;
+    --border: #ddddd3;
+    --accent: #3a5a8c;
+    --accent-ink: #ffffff;
+    --accent-soft: #e7edf6;
+    --good: #2e7d53;
+    --good-soft: #e5f2ea;
+    --warn: #a5690a;
+    --warn-soft: #f7ecd9;
+    --bad: #b3392b;
+    --bad-soft: #f8e6e3;
+    --offline: #5c5f66;
+    --offline-soft: #eaeaea;
+    --shadow: 0 1px 2px rgba(20,20,15,0.04), 0 8px 24px -12px rgba(20,20,15,0.12);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15161a;
+      --surface: #1d1f24;
+      --surface-2: #24262c;
+      --ink: #ecece6;
+      --ink-dim: #a8a9a2;
+      --ink-faint: #75766f;
+      --border: #34363c;
+      --accent: #7fa3d6;
+      --accent-ink: #10151f;
+      --accent-soft: #1f2a3c;
+      --good: #6bc492;
+      --good-soft: #1a2c22;
+      --warn: #e0aa4e;
+      --warn-soft: #332a15;
+      --bad: #e2887c;
+      --bad-soft: #35201d;
+      --offline: #9a9ca4;
+      --offline-soft: #26272b;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15161a;
+    --surface: #1d1f24;
+    --surface-2: #24262c;
+    --ink: #ecece6;
+    --ink-dim: #a8a9a2;
+    --ink-faint: #75766f;
+    --border: #34363c;
+    --accent: #7fa3d6;
+    --accent-ink: #10151f;
+    --accent-soft: #1f2a3c;
+    --good: #6bc492;
+    --good-soft: #1a2c22;
+    --warn: #e0aa4e;
+    --warn-soft: #332a15;
+    --bad: #e2887c;
+    --bad-soft: #35201d;
+    --offline: #9a9ca4;
+    --offline-soft: #26272b;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans KR", -apple-system, sans-serif;
+    line-height: 1.55;
+    padding-inline: 20px;
+    padding-block: 28px 60px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  header.page { display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  h1 {
+    font-family: "Noto Serif KR", serif;
+    font-weight: 700;
+    font-size: clamp(1.6rem, 4vw, 2.15rem);
+    margin: 0;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .sub { color: var(--ink-dim); font-size: 0.95rem; max-width: 62ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+  }
+
+  /* ---- Hero ticker ---- */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .hero-label { font-size: 0.85rem; color: var(--ink-dim); font-weight: 500; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.fresh { background: var(--good-soft); color: var(--good); }
+  .chip.stale { background: var(--warn-soft); color: var(--warn); }
+  .chip.error { background: var(--bad-soft); color: var(--bad); }
+  .chip.offline { background: var(--offline-soft); color: var(--offline); }
+
+  .ticker-value {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ticker-value .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: clamp(2.4rem, 8vw, 3.6rem);
+    letter-spacing: -0.02em;
+  }
+  .ticker-value .unit { font-size: 1.05rem; color: var(--ink-dim); font-weight: 500; }
+
+  .hero-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px 22px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+  .meta-item { display: flex; flex-direction: column; gap: 3px; }
+  .meta-item .k { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .meta-item .v { font-size: 0.9rem; color: var(--ink); }
+  .meta-item .v a { color: var(--accent); text-decoration: none; }
+  .meta-item .v a:hover { text-decoration: underline; }
+
+  .banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+  }
+  .banner.warn { background: var(--warn-soft); color: var(--warn); }
+  .banner.bad { background: var(--bad-soft); color: var(--bad); }
+  .banner.offline { background: var(--offline-soft); color: var(--offline); }
+  .banner b { font-weight: 700; }
+  .banner p { margin: 2px 0 0; opacity: 0.92; }
+
+  /* ---- section headers ---- */
+  h2 {
+    font-family: "Noto Serif KR", serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+  .section-note { color: var(--ink-dim); font-size: 0.86rem; margin: 0 0 14px; max-width: 66ch; }
+
+  /* ---- compare table (원자료 / 저장값 / 화면값) ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  .table-scroll { overflow-x: auto; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); font-weight: 600; }
+  td.mono { font-size: 0.85rem; }
+  tr:last-child td { border-bottom: none; }
+  .delta { font-weight: 600; }
+  .delta.up { color: var(--bad); }
+  .delta.down { color: var(--accent); }
+  .delta.flat { color: var(--ink-faint); }
+
+  /* ---- failure simulator ---- */
+  .sim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+  .sim-btn {
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.08s ease, border-color 0.15s ease;
+  }
+  .sim-btn:hover { border-color: var(--accent); }
+  .sim-btn:active { transform: scale(0.98); }
+  .sim-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sim-btn .tag { display: block; font-size: 0.68rem; color: var(--ink-faint); font-weight: 500; margin-top: 2px; }
+  .sim-btn.active { border-color: var(--accent); background: var(--accent-soft); }
+  .sim-btn.reset { background: var(--surface); }
+
+  .sim-output { margin-top: 16px; }
+  .sim-state-box {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sim-state-box .headline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .sim-state-box .headline .title { font-weight: 700; font-size: 1rem; }
+  .sim-explain { font-size: 0.88rem; color: var(--ink); }
+  .sim-next { font-size: 0.86rem; color: var(--ink-dim); border-top: 1px dashed var(--border); padding-top: 10px; }
+  .sim-next b { color: var(--ink); }
+  .sim-fallback {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .sim-fallback .fl-unit { font-size: 0.78rem; font-weight: 500; color: var(--ink-dim); font-family: "Noto Sans KR", sans-serif; }
+  .retry-btn {
+    align-self: flex-start;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .retry-btn:hover { background: var(--accent-soft); }
+  .synthetic-note {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+  }
+
+  footer {
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  footer a { color: var(--ink-dim); }
+
+  @media (max-width: 420px) {
+    .card { padding: 18px 16px; }
+    th, td { padding: 8px 6px; font-size: 0.8rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">DATA RELIABILITY BOARD · USD → KRW</div>
+    <h1>오늘의 환율</h1>
+    <p class="sub">매일 같은 시각, 같은 공개 출처에서 원/달러 환율을 그대로 기록합니다.</p>
+  </header>
+
+  <!-- HERO: live-ish ticker -->
+  <section class="card hero" id="hero">
+    <div class="hero-top">
+      <div class="hero-label">현재 표시 중인 값</div>
+      <span class="chip fresh" id="statusChip">최신</span>
+    </div>
+
+    <div class="ticker-value">
+      <span class="num mono" id="tickerNum">1,346.24</span>
+      <span class="unit">KRW / 1 USD</span>
+    </div>
+
+    <div id="bannerSlot"></div>
+
+    <div class="hero-meta" id="heroMeta">
+      <!-- filled by JS -->
+    </div>
+  </section>
+
+  <!-- COMPARE: raw / stored / displayed -->
+  <section class="card" id="compareSection">
+    <h2>원자료 · 저장값 · 화면값 대조</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>구분</th><th>내용</th></tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- HISTORY: daily records + recomputed change -->
+  <section class="card" id="historySection">
+    <h2>일별 기록</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>KST 날짜</th>
+            <th>값</th>
+            <th>전일 대비</th>
+            <th>출처</th>
+            <th>데이터 시각(출처 기준)</th>
+            <th>조회 시각(체크 시점)</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAILURE SIMULATOR -->
+  <section class="card" id="simSection">
+    <h2>데이터가 안 올 때</h2>
+    <p class="section-note">위 다섯 버튼 중 하나를 눌러 실패 상황을 합성 재생해 보세요. 실제 기록(현재 표시 중인 값, 일별 기록)은 바뀌지 않습니다.</p>
+
+    <div class="sim-grid" id="simButtons">
+      <button class="sim-btn" data-case="slow">느림 · 타임아웃<span class="tag">8초 내 무응답</span></button>
+      <button class="sim-btn" data-case="auth">401 / 403<span class="tag">인증·접근 거부</span></button>
+      <button class="sim-btn" data-case="rate">요청 제한<span class="tag">429 too many</span></button>
+      <button class="sim-btn" data-case="offline">오프라인<span class="tag">네트워크 끊김</span></button>
+      <button class="sim-btn" data-case="schema">형식 변경<span class="tag">스키마 불일치</span></button>
+      <button class="sim-btn reset" data-case="normal">정상으로 복구</button>
+    </div>
+
+    <div class="sim-output" id="simOutput"></div>
+  </section>
+
+  <footer>
+    <div>출처: ECB 참고환율(유럽중앙은행, 평일 하루 1회 고시, <a href="https://frankfurter.dev" target="_blank" rel="noopener">frankfurter.dev</a> 경유) · 비밀키·로그인 없이 호출됩니다.</div>
+    <div class="synthetic-note">TARGET 휴장일(주말·유럽 공휴일)에는 새 고시가 없어 직전 영업일 값이 그대로 조회됩니다 — 이 정보판은 그 사실을 숨기지 않고 표시합니다. 실패 재생 구간의 응답은 모두 합성 데이터입니다.</div>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  // ---- real daily records (appended by hand, one entry per KST calendar day) ----
+  var DAILY_RECORDS = [
+    {
+      dateKey: "2026-09-13",
+      fetchedAtKST: "2026-09-13T21:00:00+09:00",
+      fetchedAtUTC: "2026-09-13T12:00:00Z",
+      sourceUrl: "https://api.frankfurter.dev/v1/2026-09-13?base=USD&symbols=KRW",
+      sourceName: "ECB 참고환율 (Frankfurter, 하루 1회 고시)",
+      sourceAsOf: "2026-09-11",
+      sourceRefDate: "2026-09-11",
+      value: 1342.79,
+      unit: "KRW",
+      base: "USD",
+      rawJson: '{"amount":1.0,"base":"USD","date":"2026-09-11","rates":{"KRW":1342.79}}',
+      dataNote: "9/13은 TARGET 휴장일(일요일)이라 ECB가 새로 고시하지 않았습니다 — 직전 영업일(9/11 금요일)의 값이 그대로 조회됩니다."
+    },
+    {
+      dateKey: "2026-09-14",
+      fetchedAtKST: "2026-09-14T21:00:00+09:00",
+      fetchedAtUTC: "2026-09-14T12:00:00Z",
+      sourceUrl: "https://api.frankfurter.dev/v1/2026-09-14?base=USD&symbols=KRW",
+      sourceName: "ECB 참고환율 (Frankfurter, 하루 1회 고시)",
+      sourceAsOf: "2026-09-14",
+      sourceRefDate: "2026-09-14",
+      value: 1346.24,
+      unit: "KRW",
+      base: "USD",
+      rawJson: '{"amount":1.0,"base":"USD","date":"2026-09-14","rates":{"KRW":1346.24}}'
+    }
+  ];
+
+  function fmt(n) {
+    return Number(n).toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return "-";
+    var d = new Date(iso);
+    return d.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) + " KST";
+  }
+
+  var sorted = DAILY_RECORDS.slice().sort(function (a, b) { return a.dateKey < b.dateKey ? -1 : 1; });
+  var latest = sorted[sorted.length - 1];
+
+  // ---- HERO ----
+  document.getElementById("tickerNum").textContent = fmt(latest.value);
+  var meta = document.getElementById("heroMeta");
+  var asOfDisplay = /^\d{4}-\d{2}-\d{2}$/.test(latest.sourceAsOf) ? latest.sourceAsOf + " (일별 고시)" : fmtDateTime(latest.sourceAsOf);
+  meta.innerHTML =
+    '<div class="meta-item"><span class="k">출처</span><span class="v"><a href="' + latest.sourceUrl + '" target="_blank" rel="noopener">' + latest.sourceName + '</a></span></div>' +
+    '<div class="meta-item"><span class="k">데이터 시각(출처 기준)</span><span class="v mono">' + asOfDisplay + '</span></div>' +
+    '<div class="meta-item"><span class="k">조회 시각(체크 시점)</span><span class="v mono">' + fmtDateTime(latest.fetchedAtKST) + '</span></div>' +
+    '<div class="meta-item"><span class="k">기준 시간대</span><span class="v mono">Asia/Seoul (UTC+9)</span></div>';
+
+  // ---- COMPARE table: raw vs stored vs displayed ----
+  var cbody = document.getElementById("compareBody");
+  cbody.innerHTML =
+    '<tr><td>원자료 (API 응답 원문)</td><td class="mono">' + latest.rawJson + '</td></tr>' +
+    '<tr><td>저장값 (기록에 남긴 값)</td><td class="mono">value = ' + latest.value + ' ' + latest.unit + ', base = ' + latest.base + '</td></tr>' +
+    '<tr><td>화면값 (위 카드에 표시된 값)</td><td class="mono">' + fmt(latest.value) + ' KRW / 1 USD</td></tr>';
+
+  // ---- HISTORY table with recomputed day-over-day change ----
+  var hbody = document.getElementById("historyBody");
+  var rows = "";
+  for (var i = 0; i < sorted.length; i++) {
+    var rec = sorted[i];
+    var deltaCell = '<span class="delta flat mono">기준일(비교 없음)</span>';
+    if (i > 0) {
+      var prev = sorted[i - 1];
+      var diff = rec.value - prev.value; // recalculated from raw stored values, not from the screen
+      var pct = (diff / prev.value) * 100;
+      var cls = diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+      var sign = diff > 0 ? "+" : "";
+      deltaCell = '<span class="delta ' + cls + ' mono">' + sign + fmt(diff) + ' (' + sign + pct.toFixed(2) + '%)</span>';
+    }
+    var recAsOf = /^\d{4}-\d{2}-\d{2}$/.test(rec.sourceAsOf) ? rec.sourceAsOf + " 고시" : fmtDateTime(rec.sourceAsOf);
+    var noteRow = rec.dataNote
+      ? '<tr><td></td><td colspan="5" style="border-top:none; padding-top:0;"><span class="chip stale" style="margin-right:6px;">휴장 · 갱신 없음</span><span style="color:var(--ink-dim); font-size:0.82rem;">' + rec.dataNote + '</span></td></tr>'
+      : '';
+    rows +=
+      '<tr>' +
+      '<td class="mono">' + rec.dateKey + '</td>' +
+      '<td class="mono">' + fmt(rec.value) + ' ' + rec.unit + '</td>' +
+      '<td>' + deltaCell + '</td>' +
+      '<td><a href="' + rec.sourceUrl + '" target="_blank" rel="noopener">' + rec.sourceName + '</a></td>' +
+      '<td class="mono">' + recAsOf + '</td>' +
+      '<td class="mono">' + fmtDateTime(rec.fetchedAtKST) + '</td>' +
+      '</tr>' + noteRow;
+  }
+  if (sorted.length < 2) {
+    rows += '<tr><td colspan="6" style="color:var(--ink-faint); font-style:normal;">아직 서로 다른 날짜 기록이 한 건뿐입니다 — 다음 KST 날짜에 다시 조회하면 전일 대비가 계산됩니다.</td></tr>';
+  }
+  hbody.innerHTML = rows;
+
+  // ---- FAILURE SIMULATOR (synthetic, isolated from real records above) ----
+  var CASES = {
+    slow: {
+      chip: "stale", chipLabel: "지연",
+      title: "느림 · 타임아웃",
+      explain: "출처 서버가 8초 안에 응답하지 않았습니다. 요청 자체는 아직 살아 있을 수 있지만, 정보판은 무한정 기다리지 않습니다.",
+      next: "마지막 정상값을 그대로 표시하고, 30초 뒤 자동으로 한 번 더 시도합니다. 사용자가 직접 재시도할 수도 있습니다.",
+      banner: "warn", bannerTitle: "지연 감지", bannerText: "8초 응답 대기 초과 · 마지막 정상값 표시 중",
+      showFallback: true
+    },
+    auth: {
+      chip: "error", chipLabel: "인증 거부",
+      title: "401 / 403 인증·접근 거부",
+      explain: "출처가 인증을 요구했거나 이 호출 경로에 대한 접근을 거부했습니다. 비밀키를 새로 발급하거나 요청 경로가 바뀌었을 가능성이 있습니다.",
+      next: "값을 추정하지 않고 빈 상태로 둡니다. 마지막 정상값은 '오래된 값'으로 표시되며, 관리자 확인이 필요하다는 안내를 남깁니다.",
+      banner: "bad", bannerTitle: "접근 거부", bannerText: "HTTP 401/403 · 이 출처는 지금 값을 내주지 않습니다",
+      showFallback: true
+    },
+    rate: {
+      chip: "stale", chipLabel: "요청 제한",
+      title: "요청 제한 (429)",
+      explain: "짧은 시간에 너무 많이 호출해 출처가 일시적으로 응답을 제한했습니다. 정보판의 문제가 아니라 호출 빈도의 문제입니다.",
+      next: "지수 백오프로 대기 시간을 늘려가며 재시도하고, 재시도 가능 예상 시각을 함께 보여줍니다. 그동안은 마지막 정상값을 유지합니다.",
+      banner: "warn", bannerTitle: "429 Too Many Requests", bannerText: "호출 빈도 제한 · 예상 재시도: 약 60초 후",
+      showFallback: true
+    },
+    offline: {
+      chip: "offline", chipLabel: "오프라인",
+      title: "오프라인 · 네트워크 끊김",
+      explain: "정보판 자체가 네트워크에 연결되지 않았습니다. 출처가 정상이어도 지금은 요청을 보낼 수 없습니다.",
+      next: "기기에 남아있는 마지막 정상값만 보여주고, 연결이 돌아오면 자동으로 다시 확인합니다. 사용자에게는 '오프라인'임을 분명히 알립니다.",
+      banner: "offline", bannerTitle: "오프라인", bannerText: "네트워크 연결 없음 · 로컬에 저장된 값 표시 중",
+      showFallback: true
+    },
+    schema: {
+      chip: "error", chipLabel: "형식 변경",
+      title: "형식 변경 · 스키마 불일치",
+      explain: "출처는 응답했지만, 기대한 필드(rates.KRW 등)가 없거나 이름이 바뀌었습니다. 잘못된 값을 그대로 보여주는 대신 파싱을 멈춥니다.",
+      next: "원문 응답을 그대로 로그에 남기고 값 갱신을 중단합니다. 마지막 정상값은 유지하되, 스키마 확인이 필요하다는 경고를 표시합니다.",
+      banner: "bad", bannerTitle: "스키마 검증 실패", bannerText: "예상 필드 없음 · 원문을 로그로 남기고 값 갱신 중단",
+      showFallback: true
+    }
+  };
+
+  var simOutput = document.getElementById("simOutput");
+  var statusChip = document.getElementById("statusChip");
+  var bannerSlot = document.getElementById("bannerSlot");
+  var buttons = document.querySelectorAll(".sim-btn");
+
+  function clearActive() {
+    buttons.forEach(function (b) { b.classList.remove("active"); });
+  }
+
+  function renderNormal() {
+    clearActive();
+    document.querySelector('.sim-btn.reset').classList.add("active");
+    statusChip.className = "chip fresh";
+    statusChip.textContent = "최신";
+    bannerSlot.innerHTML = "";
+    simOutput.innerHTML = "";
+  }
+
+  function renderCase(key) {
+    var c = CASES[key];
+    clearActive();
+    document.querySelector('[data-case="' + key + '"]').classList.add("active");
+
+    statusChip.className = "chip " + c.chip;
+    statusChip.textContent = c.chipLabel;
+
+    bannerSlot.innerHTML =
+      '<div class="banner ' + c.banner + '"><span>●</span><div><b>' + c.bannerTitle + '</b><p>' + c.bannerText + '</p></div></div>';
+
+    var fallbackHtml = "";
+    if (c.showFallback) {
+      fallbackHtml =
+        '<div class="sim-fallback">' + fmt(latest.value) + '<span class="fl-unit">KRW / 1 USD · 마지막 정상값 (' + latest.dateKey + ' ' + fmtDateTime(latest.fetchedAtKST).replace(" KST", "") + ' KST 기준)</span></div>';
+    }
+
+    simOutput.innerHTML =
+      '<div class="sim-state-box">' +
+      '<div class="headline"><span class="chip ' + c.chip + '">' + c.chipLabel + '</span><span class="title">' + c.title + '</span></div>' +
+      '<div class="sim-explain">' + c.explain + '</div>' +
+      fallbackHtml +
+      '<div class="sim-next"><b>다음 행동 —</b> ' + c.next + '</div>' +
+      '<button class="retry-btn" data-retry="' + key + '">지금 다시 시도</button>' +
+      '<div class="synthetic-note">합성 재생 · 실제 네트워크 호출 없음</div>' +
+      '</div>';
+
+    simOutput.querySelector('[data-retry]').addEventListener("click", function () {
+      // demonstration: retry "succeeds" and recovers to fresh, showing the same last-good value
+      renderNormal();
+    });
+  }
+
+  buttons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var key = btn.getAttribute("data-case");
+      if (key === "normal") { renderNormal(); }
+      else { renderCase(key); }
+    });
+  });
+
+  renderNormal();
+})();
+</script>
