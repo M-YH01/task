@@ -1,0 +1,151 @@
+{
+  "schema": "pds-schema-v2",
+  "description": "플랜두씨 다이어리 — Plan/Do/See 데이터베이스 스키마. Claude Artifact db 캡슐(realtime document store) 위에서 동작한다.",
+  "storage": "artifact db capability (JSON document store, collection/doc path)",
+  "tables": [
+    {
+      "name": "plans",
+      "path": "accounts/{email}/plans/{planId}",
+      "description": "계획 1건. 계정(이메일)마다 따로 저장되며, 한 계정은 한 번에 활성 계획 1개(p1)를 다룬다.",
+      "fields": [
+        { "name": "id", "type": "string", "note": "문서 id와 동일 (예: p1)" },
+        { "name": "title", "type": "string" },
+        { "name": "startDate", "type": "date (YYYY-MM-DD)" },
+        { "name": "endDate", "type": "date (YYYY-MM-DD)", "note": "startDate <= endDate" },
+        { "name": "priority", "type": "enum(높음|중간|낮음)" },
+        { "name": "successCriteria", "type": "string" },
+        { "name": "estimatedHours", "type": "number", "note": "현재(최신) 예상 총 시간" },
+        { "name": "dailyTargetHours", "type": "number", "note": "하루 학습 시간 목표(h). 계획 규칙 변경 대상 — 바뀔 때마다 revisions에 사유와 함께 기록한다." },
+        { "name": "nextNote", "type": "string", "note": "돌아보기에서 다음 계획으로 넘기는 한 줄" },
+        {
+          "name": "revisions",
+          "type": "array<object>",
+          "note": "고쳐도 처음 계획이 남도록 하는 이력. revisions[0]은 최초 생성 시점 스냅샷이며 이후 절대 수정하지 않는다. 편집할 때마다 새 스냅샷을 배열 끝에 추가한다(불변 로그, append-only).",
+          "itemFields": [
+            { "name": "estimatedHours", "type": "number" },
+            { "name": "successCriteria", "type": "string" },
+            { "name": "note", "type": "string", "note": "이번 수정에서 무엇을·왜 바꿨는지" },
+            { "name": "editedAt", "type": "datetime (ISO 8601, +09:00)" }
+          ]
+        },
+        { "name": "createdAt", "type": "datetime (ISO 8601)" },
+        { "name": "updatedAt", "type": "datetime (ISO 8601)" }
+      ]
+    },
+    {
+      "name": "todos",
+      "path": "accounts/{email}/todos/{todoId}",
+      "description": "계획에 딸린 할 일 1건. 계정마다 따로 저장된다.",
+      "fields": [
+        { "name": "id", "type": "string" },
+        { "name": "planId", "type": "string", "note": "관계: plans.id 참조 (외래키, 검증은 앱 레이어에서)" },
+        { "name": "title", "type": "string" },
+        { "name": "dueDate", "type": "date (YYYY-MM-DD)" },
+        { "name": "priority", "type": "enum(높음|중간|낮음)" },
+        { "name": "tags", "type": "array<string>" },
+        { "name": "estimatedHours", "type": "number" },
+        { "name": "status", "type": "enum(todo|done)" },
+        {
+          "name": "startedAt",
+          "type": "datetime | null",
+          "note": "'시작' 누른 시각. 완료 처리 시 실행 기록으로 옮겨지고 null로 초기화된다."
+        },
+        {
+          "name": "completedAt",
+          "type": "datetime | null",
+          "note": "가장 최근 완료 시각. '되돌리기' 시 null. 재완료 시 갱신(과거 완료 이력은 logs에 그대로 남음)."
+        },
+        { "name": "createdAt", "type": "datetime (ISO 8601)" },
+        { "name": "updatedAt", "type": "datetime (ISO 8601)" }
+      ]
+    },
+    {
+      "name": "logs",
+      "path": "accounts/{email}/logs/{logId}",
+      "description": "실행 기록 1건 — 계획(estimatedHours)과 별개로, 실제로 벌어진 일을 append-only로 쌓는다. 완료 처리 1회당 정확히 1건만 생성된다(연타 방지). 계정마다 따로 저장된다.",
+      "fields": [
+        { "name": "id", "type": "string" },
+        { "name": "todoId", "type": "string", "note": "관계: todos.id 참조 (1 todo : N logs)" },
+        { "name": "startedAt", "type": "datetime (ISO 8601)" },
+        { "name": "endedAt", "type": "datetime (ISO 8601)", "note": "startedAt <= endedAt" },
+        { "name": "actualMinutes", "type": "number", "note": "실제로 걸린 시간(분). 중간 휴식 등으로 (endedAt-startedAt)과 다를 수 있어 별도 저장. 하루 지표 계산 시 이상값(예: 480분 초과)은 그 계산에서만 상한을 적용하고, 이 필드 자체는 원본 그대로 둔다." },
+        { "name": "blocker", "type": "string", "note": "막혔던 이유. 빈 문자열이면 막힘 없음" },
+        { "name": "createdAt", "type": "datetime (ISO 8601)" }
+      ]
+    },
+    {
+      "name": "users",
+      "path": "users/{email}",
+      "description": "인증 계정 1건. 문서 id가 곧 정규화된(소문자, 앞뒤 공백 제거) 이메일이다. 원문 비밀번호는 어디에도 저장하지 않는다 — 저장하는 것은 무작위 소금(salt)과 그 소금으로 만든 PBKDF2 해시뿐이다.",
+      "fields": [
+        { "name": "email", "type": "string", "note": "정규화된 이메일. 문서 id와 동일" },
+        { "name": "saltB64", "type": "string", "note": "무작위 16바이트 소금, base64" },
+        { "name": "hashB64", "type": "string", "note": "PBKDF2-HMAC-SHA256(password, saltB64, iterations) 결과, base64. 비밀번호 원문 아님" },
+        { "name": "iterations", "type": "number", "note": "PBKDF2 반복 횟수 (현재 210000)" },
+        { "name": "algo", "type": "string", "note": "고정값 'PBKDF2-SHA256'" },
+        { "name": "createdAt", "type": "datetime (ISO 8601)" }
+      ]
+    },
+    {
+      "name": "sessions",
+      "path": "sessions/{token}",
+      "description": "로그인 세션 1건. 문서 id가 곧 무작위 32바이트 세션 토큰(브라우저 localStorage에도 동일 토큰을 보관). 로그아웃 시 해당 문서를 삭제한다.",
+      "fields": [
+        { "name": "email", "type": "string", "note": "관계: users.email 참조" },
+        { "name": "createdAt", "type": "datetime (ISO 8601)" },
+        { "name": "expiresAt", "type": "datetime (ISO 8601)", "note": "발급 후 7일. 만료된 세션은 클라이언트가 확인 즉시 로그인 화면으로 되돌린다" }
+      ]
+    },
+    {
+      "name": "meta",
+      "path": "meta/{docId}",
+      "description": "앱 전체 운영 메타 정보. 지금은 legacyMigration 문서 하나만 쓴다.",
+      "fields": [
+        { "name": "migratedTo", "type": "string|null", "note": "인증 이전 공용 데이터를 물려받은 첫 계정의 이메일" },
+        { "name": "migratedAt", "type": "datetime (ISO 8601)" },
+        { "name": "todoCount", "type": "number" },
+        { "name": "logCount", "type": "number" }
+      ]
+    }
+  ],
+  "relationships": [
+    { "from": "todos.planId", "to": "plans.id", "type": "N:1 (같은 계정 안에서)" },
+    { "from": "logs.todoId", "to": "todos.id", "type": "N:1 (같은 계정 안에서)" },
+    { "from": "sessions.email", "to": "users.email", "type": "N:1" },
+    { "from": "plans/todos/logs", "to": "users.email", "type": "계정별 하위 컬렉션 — accounts/{email}/... 경로 자체가 소속을 나타낸다" }
+  ],
+  "dailyMetric": {
+    "question": "하루에 실제로 공부한 시간이 목표(하루 목표 시간, dailyTargetHours) 대비 얼마나 되는가?",
+    "indicator": "일일 실제 학습 시간",
+    "unit": "시간(h)",
+    "calcRule": "그 날짜(Asia/Seoul 기준)에 startedAt이 속하는 accounts/{email}/logs 문서들의 actualMinutes를 모두 더해 60으로 나눈다.",
+    "missingRule": "그 날짜에 해당하는 log가 하나도 없으면 그 날의 값은 0h로 처리한다(결측 아님, 미학습으로 간주).",
+    "duplicateRule": "같은 날짜에 log가 여러 건이면 모두 더한다(대표값 하나만 남기지 않음) — 쉬었다 다시 시작한 경우를 반영하기 위함.",
+    "outlierRule": "log 한 건의 actualMinutes가 480분(8시간)을 넘으면, 지표 계산에서는 그 건을 480분으로 잘라서(capping) 더한다. logs 문서 자체의 actualMinutes 원본 값은 그대로 두고 blocker 필드에 이상값 사유를 남긴다.",
+    "roundingRule": "소수 둘째 자리에서 반올림하여 소수 첫째 자리까지 표시한다(예: 3.33 → 3.3).",
+    "weekStart": "월요일 — 이 지표를 주 단위로 묶어 볼 때의 기준 요일(현재 돌아보기 탭 자체의 주차 계산은 plans.startDate 기준이라 이와 다를 수 있음을 별도로 명시)."
+  },
+  "dateRules": [
+    "모든 datetime은 ISO 8601 문자열(+09:00, Asia/Seoul)로 저장한다. date 전용 필드(dueDate 등)는 시간 없이 YYYY-MM-DD만 저장한다.",
+    "plans.startDate <= plans.endDate.",
+    "logs.startedAt <= logs.endedAt. actualMinutes는 0보다 커야 한다.",
+    "완료(completedAt)는 항상 그 완료를 만든 logs 문서의 endedAt과 같거나 그 이후 시각이다.",
+    "지연(카드4 집계)의 정의: status='todo' AND dueDate < 오늘(클라이언트 로컬 날짜).",
+    "돌아보기 집계 기간(주차)은 plans.startDate부터 7일 단위로 자른다. logs는 startedAt 기준으로, todos는 dueDate 기준으로 기간에 배정한다."
+  ],
+  "invariants": [
+    "완료 처리 1회 클릭 = logs 1건 생성 + todos.status='done' 갱신, 정확히 한 번. 연속 클릭 시 두 번째 이후는 status가 이미 'done'이면 클라이언트가 즉시 무시한다(문서 재조회 없이 캐시된 status로 방어).",
+    "revisions[0]은 생성 이후 어떤 편집으로도 변경되지 않는다.",
+    "logs는 절대 update로 값을 덮어쓰지 않는다(append-only). 실행 기록 수정이 필요하면 새 log를 추가하고 이전 log는 남긴다.",
+    "users.hashB64/saltB64 이외의 형태로 비밀번호 원문을 저장하는 필드는 존재하지 않는다.",
+    "동일 email(정규화 후)로 users 문서를 두 번 만들 수 없다 — 가입 전 존재 여부를 반드시 먼저 확인한다.",
+    "로그인 실패는 사유(존재하지 않는 계정 vs 틀린 비밀번호)와 무관하게 클라이언트에 동일한 오류 문구와 동일한 소요 시간(더미 해시 연산 포함)으로 응답한다."
+  ],
+  "knownGaps": [
+    "capabilities.db.rules로 (예전) plans/todos/logs를 read:'admin', write:'admin'으로 선언했지만, 2026-09-18 기준 as_level:'interact'로 이 문서들을 직접 읽고 쓰는 것을 막지 못하는 것을 재현·확인했다(선언 자체는 artifact-stored-declaration에 정확히 저장되어 있음을 확인). 즉 앱 화면(로그인 게이트)은 정상 작동하지만, 화면을 거치지 않고 db를 직접 호출하면 로그인 없이도 데이터를 읽고 쓸 수 있는 상태다.",
+    "계정별로 accounts/{email}/plans|todos|logs 아래에 저장을 분리했지만, 이 플랫폼의 db 캡슐이 제공하는 접근 제어는 (a) 등급(view/interact/admin/owner) 기준 최소 권한, (b) 실제 로그인된 Claude 계정 id에만 묶이는 data/users/{self} 두 가지뿐이다. 이 앱의 '계정'은 이메일+비밀번호로 직접 만든 것이라 모든 계정이 플랫폼 입장에서는 똑같이 'interact' 등급이고, Claude 계정 id와도 무관하다. 그 결과 accounts/A/... 와 accounts/B/... 를 등급 규칙만으로는 서로 구분해 막을 방법이 없다 — 실제로 as_level:'interact'로 다른 계정 경로의 문서를 읽기·수정·삭제 모두 성공하는 것을 확인했다(2026-09-18). 위험: 로그인 화면을 그대로 쓰는 보통 사용자에게는 안전해 보이지만, db를 직접 호출할 수 있는 사람(같은 조직의 다른 Claude 로그인 사용자)은 로그인 여부·계정과 무관하게 임의 계정의 계획·기록을 읽거나 고치거나 지울 수 있다. 화면(앱 코드)의 authUser 스코핑은 '가리는 것'이지 '막는 것'이 아니다.",
+    "무차별 대입(brute-force) 로그인 시도 횟수 제한(rate limiting)은 구현하지 않았다. 같은 이메일로 비밀번호를 계속 다르게 넣어 보는 것을 막는 장치가 없다 — PBKDF2 210,000회 반복이 시도 하나당 걸리는 시간을 늘려 완화하는 효과는 있지만, 계정 잠금이나 시도 횟수 제한 자체는 없다. 시간이 없어서 이번 범위에서는 구현하지 못했다.",
+    "비밀번호 재설정(이메일로 재설정 링크 보내기)과 2단계 인증(OTP 등 두 번째 인증 수단)은 구현하지 않았다. 지금 비밀번호를 잊으면 그 계정의 자료를 되찾을 방법이 없다(가입할 때 정한 비밀번호를 본인이 기억하는 것에만 의존).",
+    "로그인 성공/실패, 비밀번호 변경, 계정 삭제 같은 보안 이벤트를 별도 감사 로그(누가 언제 어디서 로그인/실패했는지)로 남기지 않는다. sessions 컬렉션이 '현재 유효한 세션'만 보여줄 뿐, 지나간 로그인 시도 이력은 남지 않는다."
+  ]
+}
