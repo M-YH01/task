@@ -112,7 +112,7 @@ try:
     print("2-d) 이미 쓴 질문 재사용 -> 401 challenge_already_used (성공에 쓴 질문도, 실패에 쓴 질문도) OK")
 
     # 등록용 질문을 로그인에 쓰기 / 모르는 질문
-    st, rc = call("POST", "/api/challenge")
+    st, rc = call("POST", "/api/challenge", {}, token)
     st, r = call("POST", "/api/login/verify", make_assertion(rc["challenge"]))
     assert st == 401 and r["error"] == "wrong_challenge_purpose"
     st, r = call("POST", "/api/login/verify", make_assertion(b64e(os.urandom(32))))

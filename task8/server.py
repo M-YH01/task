@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-로컬 패스키(WebAuthn) 서버 — 카드 2(등록) + 카드 3(로그인·세션).
+로컬 패스키(WebAuthn) 서버 — 카드 2(등록) + 카드 3(로그인·세션) + 카드 4(패스키 여러 개·삭제).
 표준 라이브러리만 사용합니다 (설치 필요 없음). 실행: python server.py
 접속: http://localhost:8787  (localhost는 WebAuthn이 "안전한 컨텍스트"로 인정)
 
@@ -23,6 +23,17 @@
 서버에는 토큰의 SHA-256 해시만 sessions.json에 저장하므로(원문 없음), 파일이 새어도
 그대로는 쓸 수 없습니다. 브라우저는 이 토큰을 Authorization: Bearer 헤더로 보냅니다.
 로그에 남는 토큰 값은 앞 4글자만 보이고 나머지는 가려집니다.
+
+[카드 4] 패스키 관리
+  GET  /api/status             패스키가 몇 개 등록돼 있는지(누구나 볼 수 있음, 개수만)
+  GET  /api/credentials        등록된 패스키 목록(이름·등록일·공개키) — 로그인한 사람만
+  POST /api/challenge          등록용 질문 — 이미 패스키가 있으면 로그인한 사람만 받을 수 있고,
+                               이미 등록된 패스키 목록(excludeCredentials)을 함께 돌려줘
+                               같은 인증장치에 중복 등록되지 않게 한다
+  POST /api/credentials/delete 패스키 삭제(로그인 필요). 지운 패스키로 연 세션도 함께 끊는다.
+                               마지막 하나를 지우려면 confirmLast=true가 있어야 한다
+  패스키가 하나도 없을 때: 로그인은 불가능하다. 새 패스키는 "서버를 켠 사람"만 볼 수 있는
+  콘솔의 설정 코드로만 다시 등록할 수 있다(코드는 서버를 켤 때마다 새로 만들고 메모리에만 둔다).
 
 저장 파일(모두 이 스크립트가 있는 폴더, 평문 JSON):
   challenges.json   발급된 challenge, 용도(register/login), 사용 여부
@@ -53,6 +64,13 @@ SESSIONS_PATH = os.path.join(HERE, "sessions.json")
 LOG_PATH = os.path.join(HERE, "request_log.jsonl")
 
 LOCK = threading.Lock()
+
+# 패스키가 하나도 없을 때 새 패스키를 등록하려면 필요한 설정 코드 (서버 콘솔에만 표시, 파일에 저장 안 함)
+_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+_raw_code = "".join(secrets.choice(_ALPHABET) for _ in range(8))
+SETUP_CODE = _raw_code[:4] + "-" + _raw_code[4:]
+SETUP_FAILS = 0
+MAX_SETUP_FAILS = 5
 
 # 비공개 자리의 내용(예시 문구). 이 값은 /api/private가 세션을 확인한 뒤에만 내보냅니다.
 # index.html(공개 페이지)에는 들어 있지 않습니다.
@@ -443,10 +461,24 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
-        if self.path == "/api/credentials":
+        if self.path == "/api/status":
             with LOCK:
-                creds = _load(CREDENTIALS_PATH, [])
-            json_response(self, 200, {"credentials": creds})
+                n = len(_load(CREDENTIALS_PATH, []))
+            json_response(self, 200, {"passkeyCount": n,
+                                      "setupCodeLocked": SETUP_FAILS >= MAX_SETUP_FAILS})
+            return
+
+        if self.path == "/api/credentials":
+            token = bearer_token(self.headers)
+            with LOCK:
+                session = lookup_session(token)
+                creds = _load(CREDENTIALS_PATH, []) if session else None
+            if not session:
+                json_response(self, 401, {"error": "unauthorized",
+                                          "message": "패스키 목록은 로그인한 사람만 볼 수 있습니다."})
+                return
+            json_response(self, 200, {"credentials": creds,
+                                      "currentCredentialId": session["credentialId"]})
             return
 
         if self.path == "/api/events":
@@ -497,12 +529,52 @@ class Handler(BaseHTTPRequestHandler):
             body.update(extra)
         json_response(self, 401, body)
 
+    def _check_setup_code(self, code):
+        """패스키가 하나도 없을 때만 쓰는 설정 코드 확인. (ok, (status, body)|None)"""
+        global SETUP_FAILS
+        if SETUP_FAILS >= MAX_SETUP_FAILS:
+            append_log({"type": "setup_code_locked"})
+            return False, (429, {"error": "setup_code_locked",
+                                 "message": "설정 코드를 너무 여러 번 틀렸습니다. 서버를 다시 켜면 풀립니다."})
+        if code and secrets.compare_digest(str(code).strip().upper(), SETUP_CODE):
+            SETUP_FAILS = 0
+            append_log({"type": "setup_code_ok"})
+            return True, None
+        SETUP_FAILS += 1
+        append_log({"type": "setup_code_failed", "failCount": SETUP_FAILS})
+        return False, (401, {"error": "bad_setup_code",
+                             "message": "패스키가 하나도 없을 때는 서버 콘솔에 표시된 설정 코드가 필요합니다."})
+
     def _do_post_locked(self):
         # ----- 등록용 challenge -----
         if self.path == "/api/challenge":
+            body, _raw = self._read_json_body()
+            creds = _load(CREDENTIALS_PATH, [])
+            setup_ok = False
+            if creds:
+                # 이미 패스키가 있으면: 로그인한 사람만 새 패스키를 추가할 수 있다
+                if not lookup_session(bearer_token(self.headers)):
+                    append_log({"type": "register_denied", "reason": "login_required"})
+                    json_response(self, 401, {"error": "unauthorized",
+                                              "message": "패스키를 추가하려면 먼저 로그인해야 합니다."})
+                    return
+            else:
+                ok, err = self._check_setup_code(body.get("setupCode"))
+                if not ok:
+                    json_response(self, err[0], err[1])
+                    return
+                setup_ok = True
             challenge_b64 = issue_challenge("register")
-            append_log({"type": "challenge_issued", "purpose": "register", "challenge": challenge_b64})
-            json_response(self, 200, {"challenge": challenge_b64})
+            if setup_ok:
+                store = _load(CHALLENGES_PATH, [])
+                for e in store:
+                    if e["challenge"] == challenge_b64:
+                        e["setupOk"] = True
+                _save(CHALLENGES_PATH, store)
+            append_log({"type": "challenge_issued", "purpose": "register", "challenge": challenge_b64,
+                        "authorizedBy": "setup_code" if setup_ok else "session"})
+            json_response(self, 200, {"challenge": challenge_b64,
+                                      "excludeCredentials": [c["credentialId"] for c in creds]})
             return
 
         # ----- 등록 -----
@@ -526,6 +598,15 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if match.get("used"):
                 json_response(self, 400, {"error": "challenge_already_used"})
+                return
+            existing = _load(CREDENTIALS_PATH, [])
+            if existing:
+                if not lookup_session(bearer_token(self.headers)):
+                    json_response(self, 401, {"error": "unauthorized",
+                                              "message": "패스키를 추가하려면 먼저 로그인해야 합니다."})
+                    return
+            elif not match.get("setupOk"):
+                json_response(self, 401, {"error": "bad_setup_code"})
                 return
 
             try:
@@ -642,7 +723,9 @@ class Handler(BaseHTTPRequestHandler):
                     cred = c
                     break
             if cred is None:
-                self._reject_login("unknown_credential", challenge=challenge_b64)
+                self._reject_login("unknown_credential",
+                                   {"message": "삭제됐거나 등록된 적 없는 패스키입니다."},
+                                   challenge=challenge_b64)
                 return
             pk = cred.get("publicKey") or {}
             if pk.get("kty") != 2 or pk.get("alg") != -7 or pk.get("crv") != "P-256":
@@ -711,6 +794,42 @@ class Handler(BaseHTTPRequestHandler):
                                       "label": cred["label"]})
             return
 
+        # ----- 패스키 삭제 -----
+        if self.path == "/api/credentials/delete":
+            body, _raw = self._read_json_body()
+            token = bearer_token(self.headers)
+            session = lookup_session(token)
+            if not session:
+                append_log({"type": "delete_denied", "reason": "login_required",
+                            "authorization": ("Bearer " + mask_token(token)) if token else "(없음)"})
+                json_response(self, 401, {"error": "unauthorized",
+                                          "message": "패스키를 지우려면 먼저 로그인해야 합니다."})
+                return
+            cid = body.get("credentialId")
+            creds = _load(CREDENTIALS_PATH, [])
+            target = next((c for c in creds if c["credentialId"] == cid), None)
+            if target is None:
+                json_response(self, 404, {"error": "unknown_credential"})
+                return
+            is_last = len(creds) == 1
+            if is_last and not body.get("confirmLast"):
+                append_log({"type": "delete_blocked_last_passkey", "credentialId": cid})
+                json_response(self, 409, {"error": "last_passkey",
+                                          "message": "마지막 패스키입니다. 지우면 로그인할 수 없게 됩니다. 확인이 필요합니다."})
+                return
+            creds = [c for c in creds if c["credentialId"] != cid]
+            _save(CREDENTIALS_PATH, creds)
+            sessions = _load(SESSIONS_PATH, [])
+            kept = [s_ for s_ in sessions if s_["credentialId"] != cid] if creds else []
+            _save(SESSIONS_PATH, kept)
+            revoked = len(sessions) - len(kept)
+            own_revoked = session["credentialId"] == cid or not creds
+            append_log({"type": "credential_deleted", "credentialId": cid, "label": target["label"],
+                        "remaining": len(creds), "sessionsRevoked": revoked, "wasLast": is_last})
+            json_response(self, 200, {"ok": True, "deleted": target["label"], "remaining": len(creds),
+                                      "sessionsRevoked": revoked, "loggedOut": own_revoked})
+            return
+
         # ----- 로그아웃 -----
         if self.path == "/api/logout":
             token = bearer_token(self.headers)
@@ -731,9 +850,10 @@ def main():
         INDEX_HTML = f.read()
 
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print("로컬 패스키 서버 실행 중: http://localhost:%d" % PORT)
-    print("저장 위치: %s" % HERE)
-    print("종료하려면 Ctrl+C")
+    print("로컬 패스키 서버 실행 중: http://localhost:%d" % PORT, flush=True)
+    print("저장 위치: %s" % HERE, flush=True)
+    print("패스키 등록 설정 코드(패스키가 하나도 없을 때만 필요): %s" % SETUP_CODE, flush=True)
+    print("종료하려면 Ctrl+C", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
