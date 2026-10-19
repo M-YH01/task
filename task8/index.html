@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>카드 2 — 로컬 패스키 등록</title>
+<title>패스키 데모 — 공개 영역 / 비공개 영역</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -11,31 +11,42 @@
     font-family: Arial, "Malgun Gothic", sans-serif;
     display: flex; justify-content: center; padding: 40px 20px;
   }
+  .wrap { width: min(760px, 94vw); }
   .card {
-    width: min(720px, 94vw); background: #1b1f29; border: 1px solid #2c3140;
-    border-radius: 16px; padding: 36px; box-shadow: 0 10px 40px rgba(0,0,0,.4);
+    background: #1b1f29; border: 1px solid #2c3140; border-radius: 16px;
+    padding: 28px 32px; margin-bottom: 22px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
   }
+  .card.public { border: 2px solid #2f6b3e; }
+  .card.private { border: 2px dashed #b8860b; }
+  .card.private.open { border: 2px solid #b8860b; }
   h1 { margin: 0 0 6px; font-size: 22px; }
-  p.sub { color: #9aa3b5; font-size: 13.5px; line-height: 1.6; }
-  .reg-form { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+  h2 { font-size: 16px; margin: 0 0 12px; color: #cdd3e0; }
+  .tag { display:inline-block; font-size: 11px; padding: 2px 9px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+  .tag.pub { background:#143d20; color:#7fe39b; }
+  .tag.priv { background:#3d3010; color:#f0c75e; }
+  p.sub { color: #9aa3b5; font-size: 13.5px; line-height: 1.6; margin: 0 0 14px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
   input[type=text] {
     flex: 1; min-width: 180px; background: #10131a; border: 1px solid #3a4258;
     border-radius: 8px; padding: 10px 12px; color: #e8e8ec; font-size: 13.5px;
   }
   button {
     background: #3a6df0; color: #fff; border: none; border-radius: 8px;
-    padding: 10px 18px; font-size: 13.5px; font-weight: bold; cursor: pointer;
+    padding: 10px 16px; font-size: 13.5px; font-weight: bold; cursor: pointer;
   }
   button:hover { background: #2d57c7; }
   button:disabled { background: #2c3140; color: #6b7280; cursor: not-allowed; }
+  button.alt { background: #3a4258; }
+  button.alt:hover { background: #4a5470; }
+  button.warn { background: #8a3b3b; }
+  button.warn:hover { background: #a64a4a; }
   .state-box {
     background: #10131a; border: 1px dashed #3a4258; border-radius: 12px;
-    padding: 16px; font-size: 13.5px; line-height: 1.7; color: #c6cbd8; margin-bottom: 20px;
+    padding: 14px 16px; font-size: 13.5px; line-height: 1.7; color: #c6cbd8;
     white-space: pre-wrap; word-break: break-all;
   }
   .state-box.ok { border-color: #2f6b3e; background: #0f1a12; color: #bfe9c8; }
   .state-box.fail { border-color: #7a3030; background: #201012; color: #e9b4b4; }
-  h2 { font-size: 15px; margin: 24px 0 10px; color: #cdd3e0; }
   .cred-item {
     background: #10131a; border: 1px solid #2c3140; border-radius: 10px;
     padding: 12px 14px; margin-bottom: 10px; font-size: 13px;
@@ -47,32 +58,83 @@
     background: #0b0d12; padding: 8px; border-radius: 6px; word-break: break-all;
     max-height: 70px; overflow: auto;
   }
+  .priv-item { background:#10131a; border:1px solid #3d3010; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .priv-item b { display:block; margin-bottom:4px; }
   .log-panel {
     background: #0b0d12; border: 1px solid #2c3140; border-radius: 10px;
     padding: 12px 14px; font-family: monospace; font-size: 11px; line-height: 1.6;
-    color: #9aa3b5; max-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+    color: #9aa3b5; max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-all;
   }
+  .log-panel .e { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed #22262f; }
+  .log-panel .s200 { color: #7fe39b; }
+  .log-panel .s4xx { color: #f0a0a0; }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>🔑 카드 2 — 로컬 패스키 등록</h1>
-  <p class="sub">이 페이지는 <code>http://localhost</code>에서 직접 떠 있는 "진짜 서버"입니다.
-  claude.ai 아티팩트의 iframe 샌드박스를 거치지 않으므로 브라우저의 실제 패스키(지문/PIN/보안 키)
-  대화상자가 그대로 뜹니다. 개인키는 이 기기의 인증장치 안에서만 만들어지고 밖으로 나가지 않으며,
-  이 서버로는 공개키만 전송됩니다.</p>
+<div class="wrap">
 
-  <div class="reg-form">
-    <input type="text" id="labelInput" placeholder="이 패스키 이름 (예: 내 노트북)" maxlength="60" />
-    <button id="registerBtn" type="button">패스키 등록하기</button>
+  <!-- ===== 공개 영역: 로그인 없이 누구나 ===== -->
+  <div class="card public">
+    <h1>나를 소개합니다 <span class="tag pub">공개 영역 · 누구나 볼 수 있음</span></h1>
+    <p class="sub">이 칸은 로그인 없이 누구에게나 보입니다. (예시 문구입니다. 실제 개인정보는 넣지 않았습니다.)</p>
+    <ul style="line-height:1.9; margin:0; padding-left:20px; font-size:14px;">
+      <li>이름: 김OO (예시)</li>
+      <li>나의 강점: 목표를 위해 행동한다 / 모르는 사람에게 친절하다 / 가까운 사람을 소중히 대한다</li>
+    </ul>
   </div>
-  <div id="status" class="state-box">아직 등록을 시작하지 않았습니다.</div>
 
-  <h2>등록된 패스키 목록</h2>
-  <div id="credList"><div style="color:#8890a0;font-size:13px;">불러오는 중…</div></div>
+  <!-- ===== 비공개 영역: 패스키 로그인 뒤에만 ===== -->
+  <div class="card private" id="privateCard">
+    <h2>🔒 나만 보는 자리 <span class="tag priv" id="privTag">잠김</span></h2>
+    <p class="sub">이 칸의 내용은 이 페이지 소스에 들어 있지 않습니다. 패스키로 로그인해 서버가 세션 토큰을 확인해 줘야만 서버에서 받아옵니다.</p>
+    <div id="privateBody" class="state-box">잠겨 있습니다. 아래 "패스키로 로그인"을 먼저 하세요.</div>
+    <div class="row" id="logoutRow" style="display:none;">
+      <button class="alt" id="logoutBtn" type="button">로그아웃</button>
+    </div>
+  </div>
 
-  <h2>서버 쪽 요청 기록 (challenge / 요청 본문 원문)</h2>
-  <div class="log-panel" id="eventLog">불러오는 중…</div>
+  <!-- ===== 로그인 ===== -->
+  <div class="card">
+    <h2>🔑 패스키로 로그인 (카드 3)</h2>
+    <p class="sub">누르면 서버가 새 질문(challenge)을 만들어 보내고, 기기가 개인키로 서명해 답하면, 서버가 저장해 둔 공개키로 서명을 확인합니다. 비밀번호를 입력하는 칸은 이 페이지 어디에도 없습니다.</p>
+    <div class="row"><button id="loginBtn" type="button">패스키로 로그인</button></div>
+    <div id="loginStatus" class="state-box">아직 로그인하지 않았습니다.</div>
+  </div>
+
+  <!-- ===== 증거 도구 ===== -->
+  <div class="card">
+    <h2>🧪 확인용 버튼 (제출 기록용)</h2>
+    <p class="sub">거절되는 경우를 일부러 만들어 서버가 실제로 막는지 기록으로 남깁니다.</p>
+    <div class="row">
+      <button class="warn" id="evNoLogin" type="button">① 로그인 없이 비공개 자리 요청</button>
+      <button class="warn" id="evWrongSig" type="button">② 틀린 서명으로 로그인 시도</button>
+      <button class="warn" id="evReplay" type="button">③ 이미 쓴 질문으로 다시 로그인</button>
+      <button class="warn" id="evOldToken" type="button">④ 로그아웃 전 토큰으로 다시 요청</button>
+    </div>
+    <p class="sub" style="margin:0;">③은 먼저 로그인에 성공해야 하고, ④는 로그인 후 로그아웃을 해야 합니다.</p>
+  </div>
+
+  <!-- ===== 등록 ===== -->
+  <div class="card">
+    <h2>🔑 패스키 등록 (카드 2)</h2>
+    <div class="row">
+      <input type="text" id="labelInput" placeholder="이 패스키 이름 (예: 내 노트북)" maxlength="60" />
+      <button id="registerBtn" type="button">패스키 등록하기</button>
+    </div>
+    <div id="status" class="state-box">아직 등록을 시작하지 않았습니다.</div>
+    <h2 style="margin-top:20px;">등록된 패스키 목록</h2>
+    <div id="credList"><div style="color:#8890a0;font-size:13px;">불러오는 중…</div></div>
+  </div>
+
+  <!-- ===== 기록 ===== -->
+  <div class="card">
+    <h2>이 화면에서 오간 요청·응답 (세션 토큰은 앞 4글자만 보이고 가려짐)</h2>
+    <div class="log-panel" id="clientLog">아직 요청이 없습니다.</div>
+  </div>
+  <div class="card">
+    <h2>서버 쪽 기록 (request_log.jsonl 최근 40건)</h2>
+    <div class="log-panel" id="eventLog">불러오는 중…</div>
+  </div>
 </div>
 
 <script>
@@ -87,141 +149,268 @@ function b64urlToBuf(str) {
   while (str.length % 4) str += "=";
   var bin = atob(str);
   var bytes = new Uint8Array(bin.length);
-  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  for (var i = 0; i < bytes.length; i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
 }
+function maskTok(t) { return t ? t.slice(0, 4) + "…(가림, 총 " + t.length + "자)" : null; }
 
-var statusEl = document.getElementById("status");
-var registerBtn = document.getElementById("registerBtn");
-var labelInput = document.getElementById("labelInput");
-var credListEl = document.getElementById("credList");
-var eventLogEl = document.getElementById("eventLog");
+var token = null;            // 세션 토큰: 화면 메모리에만 (새로고침하면 사라짐)
+var oldToken = null;         // 로그아웃 전 토큰 (④ 확인용)
+var lastSuccessBody = null;  // 성공한 로그인 요청 본문 (③ 확인용)
 
-async function refreshCredentials() {
-  var res = await fetch("/api/credentials");
-  var data = await res.json();
-  if (!data.credentials.length) {
-    credListEl.innerHTML = '<div style="color:#8890a0;font-size:13px;">아직 등록된 패스키가 없습니다.</div>';
-    return;
-  }
-  credListEl.innerHTML = "";
-  data.credentials.forEach(function (c) {
-    var div = document.createElement("div");
-    div.className = "cred-item";
-    var pk = c.publicKey || {};
-    var pkStr = JSON.stringify(pk);
-    div.innerHTML =
-      '<div class="label">🔑 ' + c.label + '</div>' +
-      '<div class="meta">등록: ' + c.createdAt + ' · 알고리즘: ' + c.algorithm +
-      ' · credential id: ' + c.credentialId.slice(0, 16) + '…</div>' +
-      '<div class="pk">저장된 값(공개키, 비밀번호 아님): ' + pkStr + '</div>';
-    credListEl.appendChild(div);
+var $ = function (id) { return document.getElementById(id); };
+var clientLogEl = $("clientLog");
+var clientEntries = [];
+
+// ---- 요청/응답 기록 (토큰은 가려서 표시) ----
+function logExchange(label, method, path, reqHeaders, reqBody, status, resBody) {
+  var safeRes = JSON.parse(JSON.stringify(resBody || {}));
+  if (safeRes.token) safeRes.token = maskTok(safeRes.token);
+  var safeHeaders = {};
+  Object.keys(reqHeaders || {}).forEach(function (k) {
+    safeHeaders[k] = (k === "Authorization") ? "Bearer " + maskTok(reqHeaders[k].replace("Bearer ", "")) : reqHeaders[k];
+  });
+  clientEntries.unshift({ label: label, method: method, path: path, headers: safeHeaders,
+                          body: reqBody, status: status, response: safeRes, at: new Date().toISOString() });
+  clientEntries = clientEntries.slice(0, 30);
+  renderClientLog();
+}
+function renderClientLog() {
+  if (!clientEntries.length) { clientLogEl.textContent = "아직 요청이 없습니다."; return; }
+  clientLogEl.innerHTML = "";
+  clientEntries.forEach(function (e) {
+    var d = document.createElement("div");
+    d.className = "e";
+    var cls = e.status >= 200 && e.status < 300 ? "s200" : "s4xx";
+    var lines = ["[" + e.at + "] " + e.label,
+                 "요청: " + e.method + " " + e.path];
+    if (Object.keys(e.headers).length) lines.push("요청 헤더: " + JSON.stringify(e.headers));
+    if (e.body !== undefined && e.body !== null) lines.push("요청 본문: " + JSON.stringify(e.body));
+    lines.push("응답: HTTP " + e.status + " " + JSON.stringify(e.response));
+    var span = document.createElement("span");
+    span.className = cls;
+    span.textContent = lines.join("\n");
+    d.appendChild(span);
+    clientLogEl.appendChild(d);
   });
 }
 
+async function api(label, method, path, body, tok) {
+  var headers = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (tok) headers["Authorization"] = "Bearer " + tok;
+  var res = await fetch(path, { method: method, headers: headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+  var data = {};
+  try { data = await res.json(); } catch (e) {}
+  logExchange(label, method, path, tok ? { Authorization: "Bearer " + tok } : {}, body, res.status, data);
+  return { status: res.status, data: data };
+}
+
+// ---- 서버 기록 ----
 async function refreshEvents() {
   var res = await fetch("/api/events");
   var data = await res.json();
-  if (!data.events.length) {
-    eventLogEl.textContent = "아직 기록이 없습니다.";
-    return;
-  }
-  eventLogEl.textContent = data.events.map(function (e) {
+  var el = $("eventLog");
+  if (!data.events.length) { el.textContent = "아직 기록이 없습니다."; return; }
+  el.textContent = data.events.map(function (e) {
     return "[" + e.loggedAt + "] " + JSON.stringify(e);
   }).join("\n\n");
 }
 
-async function register() {
-  var label = (labelInput.value || "").trim();
-  if (!label) {
-    statusEl.className = "state-box fail";
-    statusEl.textContent = "패스키 이름을 먼저 입력해 주세요.";
+// ---- 등록된 패스키 목록 ----
+async function refreshCredentials() {
+  var res = await fetch("/api/credentials");
+  var data = await res.json();
+  var el = $("credList");
+  if (!data.credentials.length) {
+    el.innerHTML = '<div style="color:#8890a0;font-size:13px;">아직 등록된 패스키가 없습니다.</div>';
     return;
   }
-  if (!window.PublicKeyCredential) {
-    statusEl.className = "state-box fail";
-    statusEl.textContent = "이 브라우저는 WebAuthn을 지원하지 않습니다.";
-    return;
+  el.innerHTML = "";
+  data.credentials.forEach(function (c) {
+    var div = document.createElement("div");
+    div.className = "cred-item";
+    var l = document.createElement("div"); l.className = "label"; l.textContent = "🔑 " + c.label;
+    var m = document.createElement("div"); m.className = "meta";
+    m.textContent = "등록: " + c.createdAt + " · 알고리즘: " + c.algorithm + " · credential id: " + c.credentialId.slice(0, 16) + "…" +
+                    (c.lastLoginAt ? " · 마지막 로그인: " + c.lastLoginAt : "");
+    var p = document.createElement("div"); p.className = "pk";
+    p.textContent = "저장된 값(공개키, 비밀번호 아님): " + JSON.stringify(c.publicKey);
+    div.appendChild(l); div.appendChild(m); div.appendChild(p);
+    el.appendChild(div);
+  });
+}
+
+// ---- 비공개 자리 표시/잠금 ----
+function lockPrivate(msg) {
+  $("privateCard").className = "card private";
+  $("privTag").textContent = "잠김";
+  $("privateBody").className = "state-box";
+  $("privateBody").textContent = msg || "잠겨 있습니다. 아래 \"패스키로 로그인\"을 먼저 하세요.";
+  $("logoutRow").style.display = "none";
+}
+async function unlockPrivate() {
+  var r = await api("비공개 자리 요청(로그인 후)", "GET", "/api/private", undefined, token);
+  if (r.status !== 200) { lockPrivate("서버가 비공개 자리를 열어 주지 않았습니다 (HTTP " + r.status + ")."); return; }
+  $("privateCard").className = "card private open";
+  $("privTag").textContent = "열림 · " + r.data.passkeyLabel + " 패스키로 로그인함";
+  var body = $("privateBody");
+  body.className = "";
+  body.textContent = "";
+  r.data.items.forEach(function (it) {
+    var d = document.createElement("div"); d.className = "priv-item";
+    var b = document.createElement("b"); b.textContent = it.title;
+    var t = document.createElement("span"); t.textContent = it.body;
+    d.appendChild(b); d.appendChild(t); body.appendChild(d);
+  });
+  $("logoutRow").style.display = "flex";
+}
+
+// ---- 로그인 의식: 새 질문 받기 -> 기기가 서명 ----
+async function loginCeremony(tamper) {
+  var ch = await api("로그인용 새 질문 요청", "POST", "/api/login/challenge");
+  if (ch.status !== 200) throw new Error("challenge 발급 실패: " + JSON.stringify(ch.data));
+  var publicKey = {
+    challenge: b64urlToBuf(ch.data.challenge),
+    allowCredentials: ch.data.allowCredentials.map(function (id) { return { id: b64urlToBuf(id), type: "public-key" }; }),
+    userVerification: "preferred",
+    timeout: 60000
+  };
+  var cred = await navigator.credentials.get({ publicKey: publicKey });
+  var r = cred.response;
+  var sig = new Uint8Array(r.signature.slice(0));
+  if (tamper) sig[sig.length - 1] ^= 0x01;   // 일부러 서명 한 비트를 틀리게
+  return {
+    challenge: ch.data.challenge,
+    credentialId: b64urlEncode(cred.rawId),
+    clientDataJSON: b64urlEncode(r.clientDataJSON),
+    authenticatorData: b64urlEncode(r.authenticatorData),
+    signature: b64urlEncode(sig)
+  };
+}
+
+async function doLogin() {
+  var st = $("loginStatus");
+  $("loginBtn").disabled = true;
+  st.className = "state-box"; st.textContent = "서버에 새 질문을 요청하는 중…";
+  var body;
+  try { body = await loginCeremony(false); }
+  catch (err) {
+    st.className = "state-box fail";
+    st.textContent = "로그인이 취소되었거나 실패했습니다 (" + (err.name || err.message || err) + "). 세션은 만들어지지 않았습니다.";
+    $("loginBtn").disabled = false; await refreshEvents(); return;
   }
+  var r = await api("패스키 로그인 요청 (서명 포함)", "POST", "/api/login/verify", body);
+  if (r.status === 200) {
+    token = r.data.token;
+    lastSuccessBody = body;
+    st.className = "state-box ok";
+    st.textContent = "로그인 성공 — 서버가 저장해 둔 공개키로 서명을 확인했습니다. 세션 토큰: " + maskTok(token) + " (만료 " + r.data.expiresAt + ")";
+    await unlockPrivate();
+  } else {
+    st.className = "state-box fail";
+    st.textContent = "서버가 로그인을 거절했습니다 (HTTP " + r.status + "): " + JSON.stringify(r.data);
+  }
+  $("loginBtn").disabled = false;
+  await refreshEvents(); await refreshCredentials();
+}
 
-  registerBtn.disabled = true;
-  statusEl.className = "state-box";
-  statusEl.textContent = "서버에 challenge 요청 중…";
+async function doLogout() {
+  if (!token) return;
+  oldToken = token;
+  await api("로그아웃", "POST", "/api/logout", undefined, token);
+  token = null;
+  lockPrivate("로그아웃했습니다. 다시 열려면 패스키로 로그인하세요.");
+  $("loginStatus").className = "state-box";
+  $("loginStatus").textContent = "로그아웃했습니다.";
+  await refreshEvents();
+}
 
-  var challengeB64;
+// ---- 확인용 버튼 ----
+$("evNoLogin").onclick = async function () {
+  await api("① 로그인 없이 비공개 자리 요청", "GET", "/api/private");
+  await refreshEvents();
+};
+$("evWrongSig").onclick = async function () {
   try {
-    var chRes = await fetch("/api/challenge", { method: "POST" });
-    var chData = await chRes.json();
-    challengeB64 = chData.challenge;
-  } catch (e) {
-    statusEl.className = "state-box fail";
-    statusEl.textContent = "challenge 발급 실패: " + e;
-    registerBtn.disabled = false;
+    var body = await loginCeremony(true);
+    await api("② 틀린 서명으로 로그인 시도", "POST", "/api/login/verify", body);
+  } catch (err) {
+    $("loginStatus").className = "state-box fail";
+    $("loginStatus").textContent = "②를 하려면 패스키 인증을 완료해야 합니다 (" + (err.name || err) + ").";
+  }
+  await refreshEvents();
+};
+$("evReplay").onclick = async function () {
+  if (!lastSuccessBody) {
+    $("loginStatus").className = "state-box fail";
+    $("loginStatus").textContent = "③은 먼저 로그인에 성공한 뒤에 눌러 주세요.";
     return;
   }
+  await api("③ 이미 쓴 질문으로 다시 로그인", "POST", "/api/login/verify", lastSuccessBody);
+  await refreshEvents();
+};
+$("evOldToken").onclick = async function () {
+  if (!oldToken) {
+    $("loginStatus").className = "state-box fail";
+    $("loginStatus").textContent = "④는 로그인 후 로그아웃을 한 뒤에 눌러 주세요.";
+    return;
+  }
+  await api("④ 로그아웃 전 토큰으로 다시 요청", "GET", "/api/private", undefined, oldToken);
+  await refreshEvents();
+};
 
+// ---- 등록 (카드 2) ----
+async function register() {
+  var statusEl = $("status");
+  var label = ($("labelInput").value || "").trim();
+  if (!label) { statusEl.className = "state-box fail"; statusEl.textContent = "패스키 이름을 먼저 입력해 주세요."; return; }
+  if (!window.PublicKeyCredential) { statusEl.className = "state-box fail"; statusEl.textContent = "이 브라우저는 WebAuthn을 지원하지 않습니다."; return; }
+  $("registerBtn").disabled = true;
+  statusEl.className = "state-box"; statusEl.textContent = "서버에 challenge 요청 중…";
+
+  var ch = await api("등록용 질문 요청", "POST", "/api/challenge");
+  var challengeB64 = ch.data.challenge;
   statusEl.textContent = "challenge 발급 완료 (" + challengeB64.slice(0, 16) + "…) — 브라우저 패스키 대화상자를 기다리는 중…";
 
   var publicKey = {
     challenge: b64urlToBuf(challengeB64),
-    rp: { name: "카드2 로컬 데모" },
-    user: {
-      id: crypto.getRandomValues(new Uint8Array(16)),
-      name: "demo-user",
-      displayName: "데모 사용자"
-    },
-    pubKeyCredParams: [ { alg: -7, type: "public-key" }, { alg: -257, type: "public-key" } ],
+    rp: { name: "패스키 로컬 데모" },
+    user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "demo-user", displayName: "데모 사용자" },
+    pubKeyCredParams: [ { alg: -7, type: "public-key" } ],
     authenticatorSelection: { userVerification: "preferred" },
     timeout: 60000,
     attestation: "none"
   };
-
   var cred;
-  try {
-    cred = await navigator.credentials.create({ publicKey: publicKey });
-  } catch (err) {
+  try { cred = await navigator.credentials.create({ publicKey: publicKey }); }
+  catch (err) {
     statusEl.className = "state-box fail";
     statusEl.textContent = "등록이 취소되었거나 실패했습니다 (" + (err.name || err) + "). 서버에는 아무 패스키도 저장되지 않았습니다.";
-    registerBtn.disabled = false;
-    await refreshEvents();
-    return;
+    $("registerBtn").disabled = false; await refreshEvents(); return;
   }
-
-  var response = cred.response;
-  var requestBody = {
-    challenge: challengeB64,
-    label: label,
-    credentialId: b64urlEncode(cred.rawId),
-    clientDataJSON: b64urlEncode(response.clientDataJSON),
-    attestationObject: b64urlEncode(response.attestationObject)
+  var body = {
+    challenge: challengeB64, label: label, credentialId: b64urlEncode(cred.rawId),
+    clientDataJSON: b64urlEncode(cred.response.clientDataJSON),
+    attestationObject: b64urlEncode(cred.response.attestationObject)
   };
-
-  var regRes = await fetch("/api/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody)
-  });
-  var regData = await regRes.json();
-
-  if (!regRes.ok) {
+  var r = await api("패스키 등록 요청", "POST", "/api/register", body);
+  if (r.status !== 200) {
     statusEl.className = "state-box fail";
-    statusEl.textContent = "서버가 등록을 거부했습니다: " + JSON.stringify(regData);
-    registerBtn.disabled = false;
-    await refreshEvents();
-    return;
+    statusEl.textContent = "서버가 등록을 거부했습니다: " + JSON.stringify(r.data);
+  } else {
+    statusEl.className = "state-box ok";
+    statusEl.textContent = "등록 완료 — \"" + label + "\" 패스키의 공개키만 서버에 저장되었습니다. 개인키는 이 기기를 떠나지 않았습니다.";
+    $("labelInput").value = "";
   }
-
-  statusEl.className = "state-box ok";
-  statusEl.textContent = "등록 완료 — \"" + label + "\" 패스키의 공개키만 서버에 저장되었습니다. 개인키는 이 기기를 떠나지 않았습니다.\n저장된 공개키: " + JSON.stringify(regData.credential.publicKey);
-  labelInput.value = "";
-  registerBtn.disabled = false;
-  await refreshCredentials();
-  await refreshEvents();
+  $("registerBtn").disabled = false;
+  await refreshCredentials(); await refreshEvents();
 }
 
-registerBtn.addEventListener("click", register);
-refreshCredentials();
-refreshEvents();
+$("registerBtn").onclick = register;
+$("loginBtn").onclick = doLogin;
+$("logoutBtn").onclick = doLogout;
+refreshCredentials(); refreshEvents();
 </script>
 </body>
 </html>
