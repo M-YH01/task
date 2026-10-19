@@ -1,0 +1,18 @@
+[
+  {
+    "tokenSha256": "99e66fe427b714ce48e48ec19536c9f967be59d5c75ad5352d3bf49e6a80983b",
+    "credentialId": "_KnlRC5eB8W3pA4WYjhEcFNITjf4LrSMoHOpLBF2DVM",
+    "label": "MYH2",
+    "createdAt": "2026-10-19T01:55:23Z",
+    "expiresEpoch": 1792376723.6964014,
+    "expiresAt": "2026-10-19T02:25:23Z"
+  },
+  {
+    "tokenSha256": "79859e97e567ba33a572fb3a83a0bc977f0a6812fa67ae2dbbe6352118230abe",
+    "credentialId": "_KnlRC5eB8W3pA4WYjhEcFNITjf4LrSMoHOpLBF2DVM",
+    "label": "MYH2",
+    "createdAt": "2026-10-19T01:56:40Z",
+    "expiresEpoch": 1792376800.7656453,
+    "expiresAt": "2026-10-19T02:26:40Z"
+  }
+]

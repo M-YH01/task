@@ -1,45 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-로컬 패스키(WebAuthn) 서버 — 카드 2(등록) + 카드 3(로그인·세션) + 카드 4(패스키 여러 개·삭제).
+로컬 패스키(WebAuthn) 서버 — 카드 2~4(등록·로그인·패스키 관리) + 카드 5(계정 두 개, 서로의 자료 차단).
 표준 라이브러리만 사용합니다 (설치 필요 없음). 실행: python server.py
 접속: http://localhost:8787  (localhost는 WebAuthn이 "안전한 컨텍스트"로 인정)
 
-[카드 2] 등록
-  POST /api/challenge       등록용 challenge 발급·보관
-  POST /api/register        attestationObject에서 공개키만 추출해 credentials.json에 저장
-  GET  /api/credentials     저장된 패스키(공개키) 목록
+페이지
+  GET  /                      공개 소개 페이지(1번 소개 페이지 그대로). 로그인 없이 누구나. API 호출 없음.
+  GET  /private               비공개 자리 화면(패스키 로그인·목록·확인 버튼). 화면 자체에는 비공개 내용이 없음.
 
-[카드 3] 로그인
-  POST /api/login/challenge 로그인용 challenge를 "매번 새로" 발급, 서버에 보관(120초, 1회용)
-  POST /api/login/verify    서명을 저장해 둔 공개키로 직접 검증. 통과해야만 세션 토큰 발급
-  GET  /api/private         비공개 자리. 세션 토큰이 없거나 틀리면 401
-  POST /api/logout          서버 쪽 세션을 지움 -> 같은 토큰으로 다시 요청하면 401
+계정: accounts.json 의 예시 계정 2개(a1 가온, a2 나래). 각 계정은 자기 패스키와 자기 비공개 자료를 따로 가진다.
 
-서명 검증(ES256 = ECDSA P-256 + SHA-256)은 외부 라이브러리 없이 이 파일 안에서
-직접 합니다. 검증 결과가 거짓이면 로그인은 거절됩니다.
+[등록]  POST /api/challenge {accountId[, setupCode]}  등록용 질문(120초, 1회용)
+        POST /api/register                           attestationObject에서 공개키만 꺼내 그 계정에 저장
+[로그인] POST /api/login/challenge {accountId}         로그인용 질문(매번 새로, 120초, 1회용)
+        POST /api/login/verify                       서명을 공개키로 직접 검증. 질문을 받은 계정의 패스키여야 통과
+[세션]  Authorization: Bearer <불투명 토큰>. 서버에는 SHA-256 해시만 저장, 계정 번호(accountId)를 함께 기억
+[자료]  GET  /api/private                    "세션에 적힌 계정"의 자료만. ?account= 나 본문의 accountId 는 무시
+        GET  /api/accounts/{id}/private      남의 계정 번호면 403 (거절 전후 상대 자료 개수를 기록)
+[관리]  GET  /api/credentials                내 계정의 패스키만
+        POST /api/credentials/delete         내 계정 패스키만 삭제 (남의 패스키 번호면 403)
+        POST /api/logout
+[기록]  POST /api/evidence                   화면이 만든 "나란히 비교" 기록을 evidence_checks.jsonl 에 저장
 
-세션 방식: 로그인에 성공하면 서버가 32바이트 난수 "불투명 세션 토큰"을 만들어 줍니다.
-서버에는 토큰의 SHA-256 해시만 sessions.json에 저장하므로(원문 없음), 파일이 새어도
-그대로는 쓸 수 없습니다. 브라우저는 이 토큰을 Authorization: Bearer 헤더로 보냅니다.
-로그에 남는 토큰 값은 앞 4글자만 보이고 나머지는 가려집니다.
-
-[카드 4] 패스키 관리
-  GET  /api/status             패스키가 몇 개 등록돼 있는지(누구나 볼 수 있음, 개수만)
-  GET  /api/credentials        등록된 패스키 목록(이름·등록일·공개키) — 로그인한 사람만
-  POST /api/challenge          등록용 질문 — 이미 패스키가 있으면 로그인한 사람만 받을 수 있고,
-                               이미 등록된 패스키 목록(excludeCredentials)을 함께 돌려줘
-                               같은 인증장치에 중복 등록되지 않게 한다
-  POST /api/credentials/delete 패스키 삭제(로그인 필요). 지운 패스키로 연 세션도 함께 끊는다.
-                               마지막 하나를 지우려면 confirmLast=true가 있어야 한다
-  패스키가 하나도 없을 때: 로그인은 불가능하다. 새 패스키는 "서버를 켠 사람"만 볼 수 있는
-  콘솔의 설정 코드로만 다시 등록할 수 있다(코드는 서버를 켤 때마다 새로 만들고 메모리에만 둔다).
+서명 검증(ES256 = ECDSA P-256 + SHA-256)은 외부 라이브러리 없이 이 파일 안에서 직접 합니다.
 
 저장 파일(모두 이 스크립트가 있는 폴더, 평문 JSON):
-  challenges.json   발급된 challenge, 용도(register/login), 사용 여부
-  credentials.json  등록된 패스키(공개키 등)
-  sessions.json     세션(토큰 해시, 만료시각)
-  request_log.jsonl 요청 기록 (토큰은 가려서 기록)
+  accounts.json / private_data.json   예시 계정과 예시 비공개 자료 (모두 지어낸 내용)
+  challenges.json  credentials.json  sessions.json(토큰 해시만)  request_log.jsonl  evidence_checks.jsonl
 """
 
 import base64
@@ -51,34 +39,51 @@ import struct
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs
 
 PORT = 8787
 RP_ID = "localhost"
-LOGIN_CHALLENGE_TTL = 120      # 초
+LOGIN_CHALLENGE_TTL = 120      # 초 (로그인 질문)
+REGISTER_CHALLENGE_TTL = 120   # 초 (등록 질문)
 SESSION_TTL = 30 * 60          # 초
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CHALLENGES_PATH = os.path.join(HERE, "challenges.json")
 CREDENTIALS_PATH = os.path.join(HERE, "credentials.json")
 SESSIONS_PATH = os.path.join(HERE, "sessions.json")
+ACCOUNTS_PATH = os.path.join(HERE, "accounts.json")
+PRIVATE_PATH = os.path.join(HERE, "private_data.json")
 LOG_PATH = os.path.join(HERE, "request_log.jsonl")
+EVIDENCE_PATH = os.path.join(HERE, "evidence_checks.jsonl")
 
 LOCK = threading.Lock()
 
-# 패스키가 하나도 없을 때 새 패스키를 등록하려면 필요한 설정 코드 (서버 콘솔에만 표시, 파일에 저장 안 함)
+# 패스키가 하나도 없는 계정에 새 패스키를 등록하려면 필요한 설정 코드 (서버 콘솔에만 표시, 파일에 저장 안 함)
 _ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 _raw_code = "".join(secrets.choice(_ALPHABET) for _ in range(8))
 SETUP_CODE = _raw_code[:4] + "-" + _raw_code[4:]
 SETUP_FAILS = 0
 MAX_SETUP_FAILS = 5
 
-# 비공개 자리의 내용(예시 문구). 이 값은 /api/private가 세션을 확인한 뒤에만 내보냅니다.
-# index.html(공개 페이지)에는 들어 있지 않습니다.
-PRIVATE_ITEMS = [
-    {"title": "진행 중인 프로젝트 메모", "body": "(예시) 사이드 프로젝트 A - 다음 주까지 로그인 붙이기"},
-    {"title": "지원하려는 곳 목록", "body": "(예시) 회사 A, 회사 B - 지원 마감일 확인 필요"},
-    {"title": "스스로 쓰는 회고", "body": "(예시) 이번 주 잘한 점 / 고칠 점 메모"},
+# 예시 계정과 예시 비공개 자료. 전부 지어낸 내용이며 실제 개인정보가 아닙니다.
+# 이 값은 파일이 없을 때만 만들어 두고, /api/private 계열이 세션을 확인한 뒤에만 내보냅니다.
+SEED_ACCOUNTS = [
+    {"id": "a1", "name": "가온 (예시 계정)"},
+    {"id": "a2", "name": "나래 (예시 계정)"},
 ]
+SEED_PRIVATE = {
+    "a1": [
+        {"title": "진행 중인 프로젝트 메모", "body": "(지어낸 예시) 가온의 사이드 프로젝트 A - 다음 주까지 로그인 붙이기"},
+        {"title": "지원하려는 곳 목록", "body": "(지어낸 예시) 가온: 회사 A, 회사 B - 지원 마감일 확인 필요"},
+        {"title": "스스로 쓰는 회고", "body": "(지어낸 예시) 가온: 이번 주 잘한 점 / 고칠 점 메모"},
+    ],
+    "a2": [
+        {"title": "읽고 있는 책", "body": "(지어낸 예시) 나래: 책 X 120쪽까지 읽음"},
+        {"title": "스터디 계획", "body": "(지어낸 예시) 나래: 화·목 저녁 알고리즘 스터디"},
+        {"title": "이번 달 목표", "body": "(지어낸 예시) 나래: 자격증 접수 / 운동 주 3회"},
+        {"title": "스스로 쓰는 메모", "body": "(지어낸 예시) 나래: 발표 연습 두 번 하기"},
+    ],
+}
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +129,40 @@ def b64url_encode(raw: bytes) -> str:
 def b64url_decode(s: str) -> bytes:
     s = s + "=" * (-len(s) % 4)
     return base64.urlsafe_b64decode(s)
+
+
+def init_data():
+    """처음 켤 때 예시 계정·자료를 만들고, 계정 번호가 없는 옛 카드 4 데이터는 파일 이름만 바꿔 보관한다."""
+    creds = _load(CREDENTIALS_PATH, [])
+    if any("accountId" not in c for c in creds):
+        stamp = time.strftime("%Y%m%d_%H%M%S")
+        for p in (CREDENTIALS_PATH, SESSIONS_PATH, CHALLENGES_PATH):
+            if os.path.exists(p):
+                os.replace(p, p.replace(".json", "_card4_" + stamp + ".json.bak"))
+        append_log({"type": "card4_data_archived", "note": "계정 번호가 없는 옛 데이터를 .bak 으로 보관"})
+    if not os.path.exists(ACCOUNTS_PATH):
+        _save(ACCOUNTS_PATH, SEED_ACCOUNTS)
+    if not os.path.exists(PRIVATE_PATH):
+        _save(PRIVATE_PATH, SEED_PRIVATE)
+
+
+def get_accounts():
+    return _load(ACCOUNTS_PATH, [])
+
+
+def get_account(account_id):
+    for a in get_accounts():
+        if a["id"] == account_id:
+            return a
+    return None
+
+
+def private_items(account_id):
+    return _load(PRIVATE_PATH, {}).get(account_id, [])
+
+
+def creds_of(creds, account_id):
+    return [c for c in creds if c.get("accountId") == account_id]
 
 
 # ---------------------------------------------------------------------------
@@ -359,15 +398,17 @@ def ecdsa_p256_verify(pub_x: int, pub_y: int, message: bytes, der_signature: byt
     return pt[0] % N == r
 
 
+
 # ---------------------------------------------------------------------------
 # challenge / session 보관소
 # ---------------------------------------------------------------------------
-def issue_challenge(purpose):
+def issue_challenge(purpose, account_id):
     challenge_b64 = b64url_encode(secrets.token_bytes(32))
     store = _load(CHALLENGES_PATH, [])
     store.append({
         "challenge": challenge_b64,
         "purpose": purpose,
+        "accountId": account_id,
         "createdAt": now_iso(),
         "createdEpoch": time.time(),
         "used": False,
@@ -383,13 +424,14 @@ def find_challenge(store, challenge_b64):
     return None
 
 
-def new_session(credential_id, label):
+def new_session(credential_id, label, account_id):
     token = b64url_encode(secrets.token_bytes(32))
     token_hash = hashlib.sha256(token.encode("ascii")).hexdigest()
     sessions = _load(SESSIONS_PATH, [])
     sessions = [s for s in sessions if s["expiresEpoch"] > time.time()]
     sessions.append({
         "tokenSha256": token_hash,
+        "accountId": account_id,
         "credentialId": credential_id,
         "label": label,
         "createdAt": now_iso(),
@@ -425,10 +467,14 @@ def bearer_token(headers):
     return None
 
 
+def auth_text(token):
+    return ("Bearer " + mask_token(token)) if token else "(없음)"
+
+
 # ---------------------------------------------------------------------------
 # HTTP 핸들러
 # ---------------------------------------------------------------------------
-INDEX_HTML = None
+PAGES = {}
 
 
 def json_response(handler, status, body):
@@ -441,6 +487,16 @@ def json_response(handler, status, body):
     handler.wfile.write(payload)
 
 
+def html_response(handler, text):
+    body = text.encode("utf-8")
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.end_headers()
+    handler.wfile.write(body)
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -448,45 +504,90 @@ class Handler(BaseHTTPRequestHandler):
     def _read_json_body(self):
         length = int(self.headers.get("Content-Length", "0"))
         raw = self.rfile.read(length) if length else b"{}"
-        return json.loads(raw.decode("utf-8")), raw.decode("utf-8")
+        try:
+            return json.loads(raw.decode("utf-8") or "{}"), raw.decode("utf-8")
+        except Exception:
+            return {}, raw.decode("utf-8", "replace")
+
+    # ---------------- 계정 확인 공통 ----------------
+    def _private_for_session(self, token, session, extra_log):
+        """[4개 흐름 중 비공개 자료 조회] 세션에 적힌 계정의 자료만 돌려준다. 요청이 어떤 계정을 말하든 무시."""
+        entry = {"type": "private_access", "authorization": auth_text(token)}
+        entry.update(extra_log)
+        if not session:
+            entry["result"] = "denied_401"
+            append_log(entry)
+            json_response(self, 401, {"error": "unauthorized",
+                                      "message": "유효한 세션 토큰이 없습니다. 패스키로 로그인하세요."})
+            return
+        acct = get_account(session["accountId"])
+        items = private_items(session["accountId"])
+        entry.update({"result": "allowed", "servedAccountId": session["accountId"], "itemCount": len(items)})
+        append_log(entry)
+        json_response(self, 200, {"accountId": session["accountId"], "accountName": acct["name"],
+                                  "items": items, "passkeyLabel": session["label"]})
+
+    def _other_account_private(self, token, session, target_id):
+        """[비공개 자료 조회] 계정 번호를 주소에 직접 적은 요청. 내 계정 번호가 아니면 403."""
+        if not session:
+            append_log({"type": "cross_account_denied", "authorization": auth_text(token),
+                        "target": target_id, "result": "denied_401"})
+            json_response(self, 401, {"error": "unauthorized", "message": "로그인이 필요합니다."})
+            return
+        if get_account(target_id) is None:
+            json_response(self, 404, {"error": "unknown_account"})
+            return
+        before = len(private_items(target_id))
+        if session["accountId"] != target_id:
+            after = len(private_items(target_id))
+            append_log({"type": "cross_account_denied", "authorization": auth_text(token),
+                        "callerAccountId": session["accountId"], "targetAccountId": target_id,
+                        "resource": "private", "targetCountBefore": before, "targetCountAfter": after,
+                        "result": "denied_403"})
+            json_response(self, 403, {"error": "forbidden_other_account",
+                                      "message": "이 세션은 다른 계정의 자료를 열 수 없습니다.",
+                                      "targetCountBefore": before, "targetCountAfter": after})
+            return
+        self._private_for_session(token, session, {"via": "/api/accounts/%s/private" % target_id})
 
     # ---------------- GET ----------------
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
-            body = INDEX_HTML.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
+        parsed = urlparse(self.path)
+        path = parsed.path
+        qs = parse_qs(parsed.query)
 
-        if self.path == "/api/status":
+        if path == "/" or path == "/index.html":
+            return html_response(self, PAGES["intro.html"])
+        if path == "/private" or path == "/private.html":
+            return html_response(self, PAGES["private.html"])
+
+        if path == "/api/status":
             with LOCK:
-                n = len(_load(CREDENTIALS_PATH, []))
-            json_response(self, 200, {"passkeyCount": n,
-                                      "setupCodeLocked": SETUP_FAILS >= MAX_SETUP_FAILS})
+                creds = _load(CREDENTIALS_PATH, [])
+                accts = [{"id": a["id"], "name": a["name"], "passkeyCount": len(creds_of(creds, a["id"]))}
+                         for a in get_accounts()]
+            json_response(self, 200, {"accounts": accts, "setupCodeLocked": SETUP_FAILS >= MAX_SETUP_FAILS})
             return
 
-        if self.path == "/api/credentials":
+        if path == "/api/credentials":
             token = bearer_token(self.headers)
             with LOCK:
                 session = lookup_session(token)
-                creds = _load(CREDENTIALS_PATH, []) if session else None
+                creds = creds_of(_load(CREDENTIALS_PATH, []), session["accountId"]) if session else None
             if not session:
                 json_response(self, 401, {"error": "unauthorized",
                                           "message": "패스키 목록은 로그인한 사람만 볼 수 있습니다."})
                 return
-            json_response(self, 200, {"credentials": creds,
+            json_response(self, 200, {"credentials": creds, "accountId": session["accountId"],
                                       "currentCredentialId": session["credentialId"]})
             return
 
-        if self.path == "/api/events":
+        if path == "/api/events":
             events = []
             with LOCK:
                 if os.path.exists(LOG_PATH):
                     with open(LOG_PATH, "r", encoding="utf-8") as f:
-                        lines = f.readlines()[-40:]
+                        lines = f.readlines()[-60:]
                     for line in lines:
                         line = line.strip()
                         if line:
@@ -495,20 +596,21 @@ class Handler(BaseHTTPRequestHandler):
             json_response(self, 200, {"events": events})
             return
 
-        if self.path == "/api/private":
+        if path == "/api/private":
             token = bearer_token(self.headers)
             with LOCK:
                 session = lookup_session(token)
-                append_log({
-                    "type": "private_access",
-                    "authorization": ("Bearer " + mask_token(token)) if token else "(없음)",
-                    "result": "allowed" if session else "denied_401",
-                })
-            if not session:
-                json_response(self, 401, {"error": "unauthorized",
-                                          "message": "유효한 세션 토큰이 없습니다. 패스키로 로그인하세요."})
-                return
-            json_response(self, 200, {"items": PRIVATE_ITEMS, "passkeyLabel": session["label"]})
+                extra = {}
+                if "account" in qs or "accountId" in qs:   # 주소에 다른 계정을 적어도 무시한다
+                    extra["ignoredAccountParam"] = qs.get("account") or qs.get("accountId")
+                self._private_for_session(token, session, extra)
+            return
+
+        if path.startswith("/api/accounts/") and path.endswith("/private"):
+            target_id = path[len("/api/accounts/"):-len("/private")]
+            token = bearer_token(self.headers)
+            with LOCK:
+                self._other_account_private(token, lookup_session(token), target_id)
             return
 
         self.send_response(404)
@@ -530,7 +632,7 @@ class Handler(BaseHTTPRequestHandler):
         json_response(self, 401, body)
 
     def _check_setup_code(self, code):
-        """패스키가 하나도 없을 때만 쓰는 설정 코드 확인. (ok, (status, body)|None)"""
+        """패스키가 하나도 없는 계정에만 쓰는 설정 코드 확인. (ok, (status, body)|None)"""
         global SETUP_FAILS
         if SETUP_FAILS >= MAX_SETUP_FAILS:
             append_log({"type": "setup_code_locked"})
@@ -543,20 +645,38 @@ class Handler(BaseHTTPRequestHandler):
         SETUP_FAILS += 1
         append_log({"type": "setup_code_failed", "failCount": SETUP_FAILS})
         return False, (401, {"error": "bad_setup_code",
-                             "message": "패스키가 하나도 없을 때는 서버 콘솔에 표시된 설정 코드가 필요합니다."})
+                             "message": "패스키가 하나도 없는 계정은 서버 콘솔에 표시된 설정 코드가 필요합니다."})
 
     def _do_post_locked(self):
+        path = urlparse(self.path).path
+
         # ----- 등록용 challenge -----
-        if self.path == "/api/challenge":
+        if path == "/api/challenge":
             body, _raw = self._read_json_body()
+            token = bearer_token(self.headers)
+            account_id = body.get("accountId")
+            if get_account(account_id) is None:
+                json_response(self, 404, {"error": "unknown_account"})
+                return
             creds = _load(CREDENTIALS_PATH, [])
+            mine = creds_of(creds, account_id)
             setup_ok = False
-            if creds:
-                # 이미 패스키가 있으면: 로그인한 사람만 새 패스키를 추가할 수 있다
-                if not lookup_session(bearer_token(self.headers)):
-                    append_log({"type": "register_denied", "reason": "login_required"})
+            if mine:
+                # 이미 패스키가 있는 계정: "그 계정으로 로그인한 세션"만 새 패스키를 추가할 수 있다
+                session = lookup_session(token)
+                if not session:
+                    append_log({"type": "register_denied", "reason": "login_required", "accountId": account_id})
                     json_response(self, 401, {"error": "unauthorized",
                                               "message": "패스키를 추가하려면 먼저 로그인해야 합니다."})
+                    return
+                if session["accountId"] != account_id:
+                    append_log({"type": "cross_account_denied", "authorization": auth_text(token),
+                                "callerAccountId": session["accountId"], "targetAccountId": account_id,
+                                "resource": "register_challenge",
+                                "targetCountBefore": len(mine), "targetCountAfter": len(mine),
+                                "result": "denied_403"})
+                    json_response(self, 403, {"error": "forbidden_other_account",
+                                              "message": "다른 계정에는 패스키를 추가할 수 없습니다."})
                     return
             else:
                 ok, err = self._check_setup_code(body.get("setupCode"))
@@ -564,21 +684,22 @@ class Handler(BaseHTTPRequestHandler):
                     json_response(self, err[0], err[1])
                     return
                 setup_ok = True
-            challenge_b64 = issue_challenge("register")
+            challenge_b64 = issue_challenge("register", account_id)
             if setup_ok:
                 store = _load(CHALLENGES_PATH, [])
                 for e in store:
                     if e["challenge"] == challenge_b64:
                         e["setupOk"] = True
                 _save(CHALLENGES_PATH, store)
-            append_log({"type": "challenge_issued", "purpose": "register", "challenge": challenge_b64,
+            append_log({"type": "challenge_issued", "purpose": "register", "accountId": account_id,
+                        "challenge": challenge_b64, "ttlSeconds": REGISTER_CHALLENGE_TTL,
                         "authorizedBy": "setup_code" if setup_ok else "session"})
-            json_response(self, 200, {"challenge": challenge_b64,
-                                      "excludeCredentials": [c["credentialId"] for c in creds]})
+            json_response(self, 200, {"challenge": challenge_b64, "ttlSeconds": REGISTER_CHALLENGE_TTL,
+                                      "excludeCredentials": [c["credentialId"] for c in mine]})
             return
 
         # ----- 등록 -----
-        if self.path == "/api/register":
+        if path == "/api/register":
             body, raw_text = self._read_json_body()
             append_log({"type": "register_request_received", "requestBody": body})
 
@@ -593,17 +714,24 @@ class Handler(BaseHTTPRequestHandler):
             if match is None:
                 json_response(self, 400, {"error": "unknown_challenge"})
                 return
-            if match.get("purpose", "register") != "register":
+            if match.get("purpose") != "register":
                 json_response(self, 400, {"error": "wrong_challenge_purpose"})
                 return
             if match.get("used"):
                 json_response(self, 400, {"error": "challenge_already_used"})
                 return
-            existing = _load(CREDENTIALS_PATH, [])
+            if time.time() - match.get("createdEpoch", 0) > REGISTER_CHALLENGE_TTL:
+                match["used"] = True
+                _save(CHALLENGES_PATH, store)
+                json_response(self, 400, {"error": "challenge_expired"})
+                return
+            account_id = match.get("accountId")
+            existing = creds_of(_load(CREDENTIALS_PATH, []), account_id)
             if existing:
-                if not lookup_session(bearer_token(self.headers)):
+                session = lookup_session(bearer_token(self.headers))
+                if not session or session["accountId"] != account_id:
                     json_response(self, 401, {"error": "unauthorized",
-                                              "message": "패스키를 추가하려면 먼저 로그인해야 합니다."})
+                                              "message": "패스키를 추가하려면 그 계정으로 로그인해야 합니다."})
                     return
             elif not match.get("setupOk"):
                 json_response(self, 401, {"error": "bad_setup_code"})
@@ -647,6 +775,7 @@ class Handler(BaseHTTPRequestHandler):
 
             record = {
                 "credentialId": credential_id_b64,
+                "accountId": account_id,
                 "label": label,
                 "algorithm": key_desc.get("algName") if key_desc else None,
                 "publicKey": key_desc,
@@ -663,35 +792,41 @@ class Handler(BaseHTTPRequestHandler):
                     e["usedAt"] = now_iso()
             _save(CHALLENGES_PATH, store)
 
-            append_log({"type": "registered", "challenge": challenge_b64, "stored": record})
+            append_log({"type": "registered", "accountId": account_id, "challenge": challenge_b64,
+                        "stored": record})
             json_response(self, 200, {"ok": True, "credential": record})
             return
 
         # ----- 로그인용 challenge (매번 새로) -----
-        if self.path == "/api/login/challenge":
-            creds = _load(CREDENTIALS_PATH, [])
-            if not creds:
+        if path == "/api/login/challenge":
+            body, _raw = self._read_json_body()
+            account_id = body.get("accountId")
+            if get_account(account_id) is None:
+                json_response(self, 404, {"error": "unknown_account"})
+                return
+            mine = creds_of(_load(CREDENTIALS_PATH, []), account_id)
+            if not mine:
                 json_response(self, 400, {"error": "no_credentials_registered"})
                 return
-            challenge_b64 = issue_challenge("login")
-            append_log({"type": "login_challenge_issued", "purpose": "login", "challenge": challenge_b64,
-                        "ttlSeconds": LOGIN_CHALLENGE_TTL})
+            challenge_b64 = issue_challenge("login", account_id)
+            append_log({"type": "login_challenge_issued", "purpose": "login", "accountId": account_id,
+                        "challenge": challenge_b64, "ttlSeconds": LOGIN_CHALLENGE_TTL})
             json_response(self, 200, {
                 "challenge": challenge_b64,
                 "ttlSeconds": LOGIN_CHALLENGE_TTL,
-                "allowCredentials": [c["credentialId"] for c in creds],
+                "allowCredentials": [c["credentialId"] for c in mine],
             })
             return
 
         # ----- 로그인 검증 -----
-        if self.path == "/api/login/verify":
+        if path == "/api/login/verify":
             body, _raw = self._read_json_body()
             append_log({"type": "login_request_received", "requestBody": body})
 
             challenge_b64 = body.get("challenge")
             credential_id_b64 = body.get("credentialId")
 
-            # 1) challenge: 서버가 보관 중인 로그인용 값인가 / 만료 / 이미 사용
+            # 1) challenge: 서버가 보관 중인 로그인용 값인가 / 이미 사용 / 만료
             store = _load(CHALLENGES_PATH, [])
             match = find_challenge(store, challenge_b64)
             if match is None:
@@ -715,7 +850,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._reject_login("challenge_expired", challenge=challenge_b64)
                 return
 
-            # 2) 등록된 패스키인가
+            # 2) 등록된 패스키인가, 그리고 "이 질문을 받은 계정"의 패스키인가
             creds = _load(CREDENTIALS_PATH, [])
             cred = None
             for c in creds:
@@ -725,6 +860,13 @@ class Handler(BaseHTTPRequestHandler):
             if cred is None:
                 self._reject_login("unknown_credential",
                                    {"message": "삭제됐거나 등록된 적 없는 패스키입니다."},
+                                   challenge=challenge_b64)
+                return
+            if cred.get("accountId") != match.get("accountId"):
+                self._reject_login("credential_not_for_this_account",
+                                   {"message": "이 패스키는 이 계정의 것이 아닙니다.",
+                                    "challengeAccountId": match.get("accountId"),
+                                    "credentialAccountId": cred.get("accountId")},
                                    challenge=challenge_b64)
                 return
             pk = cred.get("publicKey") or {}
@@ -781,63 +923,98 @@ class Handler(BaseHTTPRequestHandler):
                                    challenge=challenge_b64)
                 return
 
-            # 5) 통과 -> signCount 갱신, 세션 발급
+            # 5) 통과 -> signCount 갱신, 세션 발급 (세션에는 패스키가 속한 계정 번호가 적힌다)
             cred["signCount"] = new_count
             cred["lastLoginAt"] = now_iso()
             _save(CREDENTIALS_PATH, creds)
 
-            token, expires_at = new_session(cred["credentialId"], cred["label"])
-            append_log({"type": "login_success", "challenge": challenge_b64,
+            token, expires_at = new_session(cred["credentialId"], cred["label"], cred["accountId"])
+            append_log({"type": "login_success", "accountId": cred["accountId"], "challenge": challenge_b64,
                         "credentialId": cred["credentialId"], "label": cred["label"],
                         "sessionToken": mask_token(token), "expiresAt": expires_at})
             json_response(self, 200, {"ok": True, "token": token, "expiresAt": expires_at,
-                                      "label": cred["label"]})
+                                      "label": cred["label"], "accountId": cred["accountId"]})
             return
 
-        # ----- 패스키 삭제 -----
-        if self.path == "/api/credentials/delete":
+        # ----- 비공개 자료 (본문에 계정 번호를 적어도 무시) -----
+        if path == "/api/private":
+            body, _raw = self._read_json_body()
+            token = bearer_token(self.headers)
+            session = lookup_session(token)
+            extra = {}
+            if "accountId" in body or "account" in body:
+                extra["ignoredAccountInBody"] = body.get("accountId") or body.get("account")
+            self._private_for_session(token, session, extra)
+            return
+
+        # ----- 패스키 삭제 (내 계정 것만) -----
+        if path == "/api/credentials/delete":
             body, _raw = self._read_json_body()
             token = bearer_token(self.headers)
             session = lookup_session(token)
             if not session:
-                append_log({"type": "delete_denied", "reason": "login_required",
-                            "authorization": ("Bearer " + mask_token(token)) if token else "(없음)"})
+                append_log({"type": "delete_denied", "reason": "login_required", "authorization": auth_text(token)})
                 json_response(self, 401, {"error": "unauthorized",
                                           "message": "패스키를 지우려면 먼저 로그인해야 합니다."})
                 return
             cid = body.get("credentialId")
-            creds = _load(CREDENTIALS_PATH, [])
-            target = next((c for c in creds if c["credentialId"] == cid), None)
+            all_creds = _load(CREDENTIALS_PATH, [])
+            target = next((c for c in all_creds if c["credentialId"] == cid), None)
             if target is None:
                 json_response(self, 404, {"error": "unknown_credential"})
                 return
-            is_last = len(creds) == 1
+            if target.get("accountId") != session["accountId"]:
+                n = len(creds_of(all_creds, target.get("accountId")))
+                append_log({"type": "cross_account_denied", "authorization": auth_text(token),
+                            "callerAccountId": session["accountId"], "targetAccountId": target.get("accountId"),
+                            "resource": "delete_passkey", "targetCountBefore": n, "targetCountAfter": n,
+                            "result": "denied_403"})
+                json_response(self, 403, {"error": "forbidden_other_account",
+                                          "message": "다른 계정의 패스키는 지울 수 없습니다.",
+                                          "targetCountBefore": n, "targetCountAfter": n})
+                return
+            mine = creds_of(all_creds, session["accountId"])
+            is_last = len(mine) == 1
             if is_last and not body.get("confirmLast"):
                 append_log({"type": "delete_blocked_last_passkey", "credentialId": cid})
                 json_response(self, 409, {"error": "last_passkey",
                                           "message": "마지막 패스키입니다. 지우면 로그인할 수 없게 됩니다. 확인이 필요합니다."})
                 return
-            creds = [c for c in creds if c["credentialId"] != cid]
-            _save(CREDENTIALS_PATH, creds)
+            all_creds = [c for c in all_creds if c["credentialId"] != cid]
+            _save(CREDENTIALS_PATH, all_creds)
+            remaining = len(creds_of(all_creds, session["accountId"]))
             sessions = _load(SESSIONS_PATH, [])
-            kept = [s_ for s_ in sessions if s_["credentialId"] != cid] if creds else []
+            kept = [s_ for s_ in sessions
+                    if s_["credentialId"] != cid and (remaining > 0 or s_["accountId"] != session["accountId"])]
             _save(SESSIONS_PATH, kept)
             revoked = len(sessions) - len(kept)
-            own_revoked = session["credentialId"] == cid or not creds
-            append_log({"type": "credential_deleted", "credentialId": cid, "label": target["label"],
-                        "remaining": len(creds), "sessionsRevoked": revoked, "wasLast": is_last})
-            json_response(self, 200, {"ok": True, "deleted": target["label"], "remaining": len(creds),
+            own_revoked = session["credentialId"] == cid or remaining == 0
+            append_log({"type": "credential_deleted", "accountId": session["accountId"], "credentialId": cid,
+                        "label": target["label"], "remaining": remaining, "sessionsRevoked": revoked,
+                        "wasLast": is_last})
+            json_response(self, 200, {"ok": True, "deleted": target["label"], "remaining": remaining,
                                       "sessionsRevoked": revoked, "loggedOut": own_revoked})
             return
 
         # ----- 로그아웃 -----
-        if self.path == "/api/logout":
+        if path == "/api/logout":
             token = bearer_token(self.headers)
             removed = delete_session(token) if token else False
-            append_log({"type": "logout",
-                        "authorization": ("Bearer " + mask_token(token)) if token else "(없음)",
-                        "sessionRemoved": removed})
+            append_log({"type": "logout", "authorization": auth_text(token), "sessionRemoved": removed})
             json_response(self, 200, {"ok": True, "sessionRemoved": removed})
+            return
+
+        # ----- 화면이 만든 "나란히 비교" 기록 저장 -----
+        if path == "/api/evidence":
+            body, raw_text = self._read_json_body()
+            if len(raw_text) > 300000:
+                json_response(self, 413, {"error": "too_large"})
+                return
+            body["savedAt"] = now_iso()
+            with open(EVIDENCE_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps(body, ensure_ascii=False) + "\n")
+            append_log({"type": "evidence_saved", "name": body.get("name")})
+            json_response(self, 200, {"ok": True})
             return
 
         self.send_response(404)
@@ -845,14 +1022,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global INDEX_HTML
-    with open(os.path.join(HERE, "index.html"), "r", encoding="utf-8") as f:
-        INDEX_HTML = f.read()
+    for name in ("intro.html", "private.html"):
+        with open(os.path.join(HERE, name), "r", encoding="utf-8") as f:
+            PAGES[name] = f.read()
+    init_data()
 
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-    print("로컬 패스키 서버 실행 중: http://localhost:%d" % PORT, flush=True)
+    print("로컬 패스키 서버 실행 중: http://localhost:%d  (공개 소개)" % PORT, flush=True)
+    print("비공개 자리 화면:        http://localhost:%d/private" % PORT, flush=True)
     print("저장 위치: %s" % HERE, flush=True)
-    print("패스키 등록 설정 코드(패스키가 하나도 없을 때만 필요): %s" % SETUP_CODE, flush=True)
+    print("설정 코드(패스키가 하나도 없는 계정을 등록할 때만 필요): %s" % SETUP_CODE, flush=True)
     print("종료하려면 Ctrl+C", flush=True)
     try:
         server.serve_forever()

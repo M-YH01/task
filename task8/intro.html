@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>나를 소개합니다</title>
+</head>
+<body>
+<style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f5f7fa;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: #222;
+      padding: clamp(20px, 4vh, 50px) clamp(20px, 4vw, 50px);
+    }
+
+    .container {
+      width: clamp(320px, 92vw, 1300px);
+      background: #fff;
+      padding: clamp(28px, 4vh, 48px) clamp(28px, 4vw, 56px);
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    #main-page { display: block; }
+    #detail-page { display: none; }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+      font-size: clamp(26px, 3vh, 36px);
+      margin-bottom: 12px;
+    }
+
+    .intro {
+      text-align: center;
+      color: #555;
+      margin-bottom: clamp(20px, 3vh, 32px);
+      font-size: clamp(16px, 2vh, 20px);
+    }
+
+    section { margin-top: clamp(20px, 2.5vh, 30px); }
+
+    h2 {
+      font-size: clamp(20px, 2.5vh, 24px);
+      margin-top: 0;
+      margin-bottom: clamp(12px, 1.5vh, 16px);
+      padding-bottom: 8px;
+      border-bottom: 2px solid #eee;
+    }
+
+    ul {
+      line-height: 1.8;
+      padding-left: 20px;
+      margin: 0;
+      font-size: clamp(15px, 1.8vh, 18px);
+    }
+
+    .private-section { display: none; }
+
+    .strength-container {
+      display: flex;
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    .strength-left-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 340px;
+    }
+
+    .header-spacer { height: 52px; }
+
+    .strength-item {
+      display: flex;
+      align-items: center;
+      height: 80px;
+    }
+
+    .strength-item .num {
+      font-size: clamp(24px, 3.5vh, 36px);
+      font-weight: bold;
+      margin-right: 12px;
+      line-height: 1;
+    }
+
+    .strength-item .text {
+      font-size: clamp(14px, 1.7vh, 17px);
+      font-weight: bold;
+      white-space: nowrap;
+      margin-right: 10px;
+    }
+
+    .detail-btn, .back-btn {
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .detail-btn { margin-right: 10px; }
+    .detail-btn:hover, .back-btn:hover { background-color: #dee2e6; }
+    .detail-btn:focus, .back-btn:focus {
+      outline: 2px solid #4A90E2;
+      outline-offset: 2px;
+      background-color: #d0ebff;
+    }
+
+    .strength-item .solid-line {
+      flex: 1;
+      height: 2px;
+      background-color: #000;
+    }
+
+    .table-wrapper { flex: 2; min-width: 550px; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th, td {
+      border: 2px solid #222;
+      padding: clamp(10px, 1.5vh, 16px) clamp(10px, 1.2vw, 16px);
+      text-align: left;
+      font-size: clamp(14px, 1.7vh, 17px);
+      line-height: 1.5;
+      vertical-align: middle;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      text-align: center;
+      color: #333;
+      height: 52px;
+    }
+
+    td { height: 80px; }
+
+    th:nth-child(1) { width: 30%; }
+    th:nth-child(2) { width: 35%; }
+    th:nth-child(3) { width: 35%; }
+
+    .detail-card {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 20px;
+      line-height: 1.8;
+      font-size: clamp(15px, 1.8vh, 18px);
+      color: #333;
+    }
+
+    .back-btn-wrapper { margin-top: 24px; text-align: right; }
+
+    /* ---- 8번 과제: 비공개 자리로 가는 입구 ---- */
+    .locked-gate {
+      margin-top: clamp(20px, 2.5vh, 30px);
+      background: #fff8e6;
+      border: 2px dashed #e0a800;
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .locked-gate .label {
+      font-weight: bold;
+      font-size: clamp(15px, 1.8vh, 18px);
+    }
+    .locked-gate .sub {
+      color: #666;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .locked-gate a.enter-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #333;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .locked-gate a.enter-btn:hover { background: #111; }
+  </style>
+<main class="container">
+    <div id="main-page">
+      <h1>나를 소개합니다</h1>
+      <p class="intro">이 페이지는 모두에게 나를 보여주기 위한 것이다.</p>
+
+      <section class="public-info-section">
+        <ul>
+          <li>이름: 김OO</li>
+          <li>나이: 31</li>
+          <li>최종학력: 대졸</li>
+        </ul>
+      </section>
+
+      <section class="private-section">
+        <h2>공개하지 않을 것</h2>
+        <ul class="private">
+          <li>학교 이름</li>
+          <li>얼굴</li>
+          <li>연락처</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>나의 강점 3가지</h2>
+
+        <div class="strength-container">
+          <div class="strength-left-list">
+            <div class="header-spacer"></div>
+
+            <div class="strength-item">
+              <span class="num">1.</span>
+              <span class="text">목표 달성을 위해 행동한다</span>
+              <div class="solid-line"></div>
+            </div>
+
+            <div class="strength-item">
+              <span class="num">2.</span>
+              <span class="text">모르는 사람에게 친절하다</span>
+              <button id="kindnessBtn" class="detail-btn" type="button">추가 문장</button>
+              <div class="solid-line"></div>
+            </div>
+
+            <div class="strength-item">
+              <span class="num">3.</span>
+              <span class="text">가까운 사람을 소중히 대할줄 안다</span>
+              <div class="solid-line"></div>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>언제·어디서 있었는가</th>
+                  <th>내가 실제로 무엇을 했는가</th>
+                  <th>어떤 결과가 생겼는가</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2주일 전, 집에서</td>
+                  <td>SKT_ALEPH 교육을 신청했다</td>
+                  <td>1. 보안 관제 엔지니어 취업을 위한 첫 걸음을 시작했다.</td>
+                </tr>
+                <tr>
+                  <td>일주일 전, 대전 시청역 근처에서</td>
+                  <td>고메스퀘어가 어디 있는지를 물어보는 어르신께 알려드렸다</td>
+                  <td>2. 길을 알려드리자, 할머니가 고마워 하셨다.</td>
+                </tr>
+                <tr>
+                  <td>3일 전, 집에서</td>
+                  <td>여행 다녀오신 부모님을 위해 공항에 마중나가고, 밥을 차려드렸다</td>
+                  <td>3. 마중 나가고 밥을 차려드리니 부모님이 기뻐하셨다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="locked-gate">
+        <div>
+          <div class="label">🔒 비공개 자리 — 나만 보는 공간</div>
+          <div class="sub">패스키로 잠겨 있습니다. 이 공개 소개와는 별도의 화면이며, 패스키 로그인이 있어야 내용이 보입니다.</div>
+        </div>
+        <a class="enter-btn" href="/private">비공개 자리로 가기 →</a>
+      </section>
+    </div>
+
+    <div id="detail-page">
+      <h2>모르는 사람에게 친절하다</h2>
+
+      <div class="detail-card">
+        일주일 전 점심시간에 대전 시청역 근처를 지나고 있었다. 점심 먹을 곳이 있나 둘러보고 있었는데, 어떤 할머니가 나한테 고메스퀘어가 어디 있는지 아냐고 물어보셨다. 나도 본가가 대전이 아니라 고메스퀘어를 몰라서 처음에 당황했지만, 잠시만 기다려달라고 말하고 핸드폰으로 찾아보니 근처여서 알려드릴 수 있었다. 이처럼 간단한 일, 내가 도울 수 있는 일이면 모르는 사람에게도 친절하게 행동하는 것이 나의 강점이다.
+      </div>
+
+      <div class="back-btn-wrapper">
+        <button id="backBtn" class="back-btn" type="button">← 돌아가기</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const mainPage = document.getElementById('main-page');
+    const detailPage = document.getElementById('detail-page');
+    const kindnessBtn = document.getElementById('kindnessBtn');
+    const backBtn = document.getElementById('backBtn');
+
+    kindnessBtn.addEventListener('click', function() {
+      mainPage.style.display = 'none';
+      detailPage.style.display = 'block';
+      backBtn.focus();
+    });
+
+    backBtn.addEventListener('click', function() {
+      detailPage.style.display = 'none';
+      mainPage.style.display = 'block';
+      kindnessBtn.focus();
+    });
+  </script>
+
+</body>
+</html>
