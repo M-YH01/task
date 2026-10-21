@@ -1,0 +1,6 @@
+*.parquet
+games.csv
+games.json
+__pycache__/
+*.zip
+.git_nested_backup/
