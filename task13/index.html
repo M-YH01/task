@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>스팀 가격으로 보는 플레이 시간 범위</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1c2230;--sub:#5b6577;--line:#d9dee7;--accent:#2457d6;--accent-ink:#fff;--bar:#9db6f0;--mid:#2457d6;--warn-bg:#fff4dc;--warn-ink:#6b4a00;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1b2030;--ink:#e8ecf4;--sub:#a3adc0;--line:#2e3650;--accent:#7ea2ff;--accent-ink:#0d1220;--bar:#3a4f8a;--mid:#7ea2ff;--warn-bg:#3a2f12;--warn-ink:#ffd98a;--err:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 48px}
+.paper{font-size:14px;color:var(--sub);margin:0}
+h1{font-size:22px;line-height:1.35;margin:4px 0 12px}
+.lead{font-size:17px;margin:0 0 20px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 10px}
+label{display:block;font-weight:600;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input{flex:1 1 140px;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{font:inherit;padding:10px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chips button{padding:6px 12px;font-size:14px}
+.err{color:var(--err);margin:8px 0 0;min-height:1.4em}
+.res{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:12px}
+.res h3{margin:0 0 4px;font-size:15px}
+.big{font-size:26px;font-weight:700}
+.range{font-size:15px;color:var(--sub)}
+.scale{position:relative;height:18px;background:var(--bg);border:1px solid var(--line);border-radius:9px;margin:10px 0 4px;overflow:hidden}
+.scale .bar{position:absolute;top:0;bottom:0;background:var(--bar)}
+.scale .mid{position:absolute;top:0;bottom:0;width:3px;background:var(--mid)}
+.small{font-size:13px;color:var(--sub)}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:14px}
+.note{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:12px 14px;font-size:14px}
+a{color:var(--accent)}
+p,li{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+  <p class="paper">논문: 문영훈, 「스팀 유료 게임의 가격과 평균 플레이 시간의 관계」 (2026)</p>
+  <h1>스팀 가격으로 보는 플레이 시간 범위</h1>
+  <p class="lead" id="lead">이 앱은 스팀에서 유료 게임을 살지 고민하는 사람을 돕습니다. 가격을 입력하면 논문의 가격대별 플레이 시간 중앙값과 25%~75% 범위를 보여 주고, 가격만으로는 개별 게임의 플레이 시간을 예측할 수 없다는 한계도 함께 알려 줍니다.</p>
+
+  <section class="card" aria-labelledby="h-a">
+    <h2 id="h-a">① 게임 가격을 입력하세요 (달러)</h2>
+    <form id="f1" novalidate>
+      <label for="p1">가격 (USD)</label>
+      <div class="row">
+        <input id="p1" inputmode="decimal" autocomplete="off" placeholder="예: 19.99">
+        <button type="submit">범위 보기</button>
+      </div>
+      <div class="chips" aria-label="예시 가격">
+        <button type="button" class="ghost" data-fill="p1" data-v="4.99">4.99</button>
+        <button type="button" class="ghost" data-fill="p1" data-v="9.99">9.99</button>
+        <button type="button" class="ghost" data-fill="p1" data-v="19.99">19.99</button>
+        <button type="button" class="ghost" data-fill="p1" data-v="39.99">39.99</button>
+      </div>
+      <p class="err" id="e1" role="alert"></p>
+    </form>
+    <div id="r1"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-b">
+    <h2 id="h-b">② 다른 가격과 나란히 비교해 보세요 (선택)</h2>
+    <form id="f2" novalidate>
+      <label for="p2">비교할 가격 (USD)</label>
+      <div class="row">
+        <input id="p2" inputmode="decimal" autocomplete="off" placeholder="예: 39.99">
+        <button type="submit">비교하기</button>
+      </div>
+      <p class="err" id="e2" role="alert"></p>
+    </form>
+    <div id="r2"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-c">
+    <h2 id="h-c">③ 읽을 때 꼭 알아 둘 점</h2>
+    <p>이 숫자는 <b>같은 가격대 게임 전체의 경향</b>입니다. 입력한 게임 하나의 플레이 시간을 예측하는 값이 아닙니다. 논문에서도 같은 가격대 안에서 플레이 시간이 크게 갈렸고, 가격과 플레이 시간의 관계는 상관이지 인과가 아니라고 밝혔습니다.</p>
+    <p class="small">자료: 허깅페이스 공개 스팀 게임 데이터 중 유료이고 리뷰 100개 이상, 평균 플레이 시간 0 초과인 16,911개. 가격과 평균 플레이 시간의 스피어만 상관계수 0.306.</p>
+  </section>
+</main>
+
+<script>
+// 논문 5.2절 표와 부록 (D)의 값. 시간 단위. 구간은 (하한, 상한] 입니다.
+var BANDS = [
+  {name:"5달러 이하",   lo:0,  hi:5,        n:9789, q25:1.85,  med:3.58,  q75:6.17},
+  {name:"5~15달러",     lo:5,  hi:15,       n:5616, q25:2.48,  med:5.53,  q75:12.62},
+  {name:"15~30달러",    lo:15, hi:30,       n:1321, q25:4.15,  med:10.50, q75:25.28},
+  {name:"30달러 초과",  lo:30, hi:Infinity, n:185,  q25:12.38, med:28.47, q75:58.43}
+];
+var MAXSHOW = 58.43; // 막대 그래프 눈금의 끝(논문의 가장 큰 75% 값)
+var MAX_PRICE = 1000; // 이보다 큰 값은 현실적인 스팀 가격이 아니라고 보고 안내만 한다.
+
+function parsePrice(raw){
+  var s = String(raw == null ? "" : raw).trim().replace(/^\$/, "").replace(/,/g, "");
+  if (s === "") return {err:"가격을 입력해 주세요."};
+  if (!/^\d+(\.\d+)?$/.test(s)) return {err:"숫자만 입력해 주세요. (예: 19.99) 음수나 글자는 쓸 수 없습니다."};
+  var v = parseFloat(s);
+  if (!isFinite(v)) return {err:"너무 큰 값입니다. 다시 입력해 주세요."};
+  if (v === 0) return {err:"0달러(무료) 게임은 논문 대상이 아닙니다. 논문은 유료 게임만 다뤘습니다."};
+  if (v > MAX_PRICE) return {err:MAX_PRICE + "달러를 넘는 값은 지원하지 않습니다. 스팀 게임 가격을 달러로 입력해 주세요."};
+  return {v:v};
+}
+function bandOf(v){
+  for (var i=0;i<BANDS.length;i++){ if (v > BANDS[i].lo && v <= BANDS[i].hi) return BANDS[i]; }
+  return BANDS[BANDS.length-1];
+}
+function h(x){ return x.toFixed(2).replace(/\.?0+$/, function(m){return m.indexOf(".")===0 ? "" : m;}); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+function card(price, b, title){
+  var l = Math.min(100, b.q25 / MAXSHOW * 100), w = Math.min(100, b.q75 / MAXSHOW * 100) - l, m = Math.min(100, b.med / MAXSHOW * 100);
+  var warn = "";
+  if (b.n < 500) warn = '<div class="warn">이 가격대는 게임이 ' + b.n.toLocaleString("en-US") + '개로 적어 해석에 주의가 필요합니다. (논문 5.2절)</div>';
+  return '<div class="res"><h3>' + esc(title) + ' · ' + esc(b.name) + ' 구간</h3>' +
+    '<div class="big">중앙값 ' + b.med.toFixed(2) + '시간</div>' +
+    '<div class="range">비슷한 가격 게임의 절반은 ' + b.q25.toFixed(2) + '~' + b.q75.toFixed(2) + '시간 사이였습니다 (25%~75%).</div>' +
+    '<div class="scale" aria-hidden="true"><div class="bar" style="left:' + l + '%;width:' + w + '%"></div><div class="mid" style="left:' + m + '%"></div></div>' +
+    '<div class="small">막대 = 25%~75% 범위, 세로선 = 중앙값 · 눈금 0~' + MAXSHOW + '시간 · 이 구간 게임 ' + b.n.toLocaleString("en-US") + '개</div>' +
+    warn + '</div>';
+}
+function show(inputId, errId, outId, label){
+  var out = document.getElementById(outId), err = document.getElementById(errId);
+  var p = parsePrice(document.getElementById(inputId).value);
+  if (p.err){ err.textContent = p.err; out.innerHTML = ""; return null; }
+  err.textContent = "";
+  var b = bandOf(p.v);
+  out.innerHTML = card(p.v, b, label + " " + p.v + "달러");
+  return {v:p.v, b:b};
+}
+document.getElementById("f1").addEventListener("submit", function(e){ e.preventDefault(); show("p1","e1","r1","입력한 가격"); compareHint(); });
+document.getElementById("f2").addEventListener("submit", function(e){
+  e.preventDefault();
+  if (!document.getElementById("p1").value.trim()){
+    document.getElementById("e2").textContent = "먼저 ①에 첫 번째 가격을 입력해 주세요.";
+    document.getElementById("r2").innerHTML = ""; return;
+  }
+  var a = show("p1","e1","r1","입력한 가격");
+  if (!a) { document.getElementById("e2").textContent = "①의 가격을 먼저 바로잡아 주세요."; document.getElementById("r2").innerHTML=""; return; }
+  var b = show("p2","e2","r2","비교할 가격");
+  if (b) compareHint();
+});
+function compareHint(){}
+Array.prototype.forEach.call(document.querySelectorAll("button[data-fill]"), function(btn){
+  btn.addEventListener("click", function(){
+    document.getElementById(btn.getAttribute("data-fill")).value = btn.getAttribute("data-v");
+    show("p1","e1","r1","입력한 가격");
+  });
+});
+// 비교 결과 뒤에 두 구간 중앙값 비율을 한 줄로 덧붙인다.
+document.getElementById("f2").addEventListener("submit", function(){
+  setTimeout(function(){
+    var r2 = document.getElementById("r2");
+    var p1 = parsePrice(document.getElementById("p1").value), p2 = parsePrice(document.getElementById("p2").value);
+    if (!r2.innerHTML || p1.err || p2.err) return;
+    var a = bandOf(p1.v), b = bandOf(p2.v), t;
+    if (a === b) t = "두 가격은 같은 구간이라 논문의 값도 같습니다.";
+    else {
+      var hi = a.med > b.med ? a : b, lo = a.med > b.med ? b : a;
+      t = hi.name + " 구간의 중앙값(" + hi.med.toFixed(2) + "시간)은 " + lo.name + " 구간(" + lo.med.toFixed(2) + "시간)의 약 " + (hi.med/lo.med).toFixed(1) + "배입니다. 다만 두 구간의 25%~75% 범위는 " + (hi.q25 < lo.q75 ? "겹칩니다. 비싼 게임이 항상 더 오래 플레이되는 것은 아닙니다." : "겹치지 않습니다.");
+    }
+    r2.insertAdjacentHTML("beforeend", '<div class="note" style="margin-top:12px">' + esc(t) + '</div>');
+  }, 0);
+});
+</script>
+</body>
+</html>
